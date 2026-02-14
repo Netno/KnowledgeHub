@@ -333,20 +333,30 @@ st.markdown("""
             section[data-testid="stSidebar"][aria-expanded="false"] {
                 display: none !important;
                 visibility: hidden !important;
-                width: 0 !important;
-                min-width: 0 !important;
-                overflow: hidden !important;
-            }
-            /* Always show the expand arrow */
-            [data-testid="stSidebarCollapsedControl"] {
-                display: flex !important;
-                opacity: 1 !important;
-                z-index: 999 !important;
-                position: fixed !important;
             }
         }
     </style>
 """, unsafe_allow_html=True)
+
+# Auto-close sidebar on mobile on first load
+if 'sidebar_init' not in st.session_state:
+    st.session_state.sidebar_init = True
+    streamlit.components.v1.html(
+        """
+        <script>
+        (function() {
+            if (window.parent.innerWidth > 768) return;
+            function tryClose() {
+                var sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
+                if (sidebar) sidebar.setAttribute('aria-expanded', 'false');
+            }
+            setTimeout(tryClose, 200);
+            setTimeout(tryClose, 500);
+        })();
+        </script>
+        """,
+        height=0
+    )
 streamlit.components.v1.html("""
     <div style="display:flex; align-items:center; gap:0; font-family: 'Source Sans Pro', sans-serif; margin-left:-20px;">
         <svg width="45" height="45" viewBox="0 0 100 100" fill="none">
