@@ -58,33 +58,25 @@ def check_authentication():
         st.session_state.user = None
     
     if st.session_state.user is None:
-        # Shared card styles
+        # Shared card styles - works in both light and dark theme
         _card_style = """
             <style>
                 [data-testid="stAppViewContainer"] {
                     display: flex; align-items: center; justify-content: center; min-height: 100vh;
                 }
-                [data-testid="stMainBlockContainer"] { max-width: 420px; width: 100%; }
+                [data-testid="stMainBlockContainer"] { max-width: 380px; width: 100%; }
                 [data-testid="stHeader"] { display: none; }
-                /* Style the card container */
+                [data-testid="stBottom"] { display: none; }
                 .auth-card {
-                    background: rgba(25, 25, 35, 0.9);
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 20px;
-                    padding: 2.5rem 2rem 2rem;
+                    background: var(--secondary-background-color, #f0f2f6);
+                    border-radius: 16px;
+                    padding: 2rem 1.5rem 1.5rem;
                     text-align: center;
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                    margin-bottom: 0.75rem;
                 }
-                .auth-card h2 { margin-bottom: 0.3rem; }
-                .auth-card p { color: #999; margin-bottom: 0; }
-                /* Put button inside the visual card area */
-                [data-testid="stMainBlockContainer"] > div > div > div:last-child {
-                    margin-top: -0.5rem;
-                }
-                /* Center link button text */
-                [data-testid="stMainBlockContainer"] a[data-testid="baseLinkButton-secondary"] {
-                    display: flex; justify-content: center;
-                }
+                .auth-card .auth-icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
+                .auth-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
+                .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; }
             </style>
         """
         
@@ -102,7 +94,8 @@ def check_authentication():
                     st.markdown(_card_style, unsafe_allow_html=True)
                     st.markdown("""
                         <div class="auth-card">
-                            <h2 style="color: #ff6b6b;">Access Denied</h2>
+                            <div class="auth-icon">⛔</div>
+                            <h2>Access Denied</h2>
                             <p>You do not have permission to sign in.</p>
                         </div>
                     """, unsafe_allow_html=True)
@@ -127,7 +120,8 @@ def check_authentication():
                     st.markdown(_card_style, unsafe_allow_html=True)
                     st.markdown("""
                         <div class="auth-card">
-                            <h2 style="color: #ff6b6b;">Access Denied</h2>
+                            <div class="auth-icon">⛔</div>
+                            <h2>Access Denied</h2>
                             <p>You do not have permission to sign in.</p>
                         </div>
                     """, unsafe_allow_html=True)
@@ -144,7 +138,8 @@ def check_authentication():
         st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
             <div class="auth-card">
-                <h2>💡 KnowledgeHub</h2>
+                <div class="auth-icon">💡</div>
+                <h2>KnowledgeHub</h2>
                 <p>Sign in to continue</p>
             </div>
         """, unsafe_allow_html=True)
