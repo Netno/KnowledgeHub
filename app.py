@@ -328,6 +328,9 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
+        /* Ensure sidebar controls are always visible */
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"] { display: flex !important; opacity: 1 !important; z-index: 999 !important; }
     </style>
 """, unsafe_allow_html=True)
 streamlit.components.v1.html("""
@@ -383,14 +386,20 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
     streamlit.components.v1.html(
         """
         <script>
-        // Only collapse on mobile/narrow screens (sidebar is overlay, not pinned)
         if (window.parent.innerWidth <= 768) {
-            const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
-            if (sidebar) {
-                sidebar.setAttribute('aria-expanded', 'false');
-                sidebar.style.transform = 'translateX(-100%)';
-                const btn = window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
-                if (btn) btn.style.display = '';
+            // Click the actual close button instead of manipulating CSS
+            const closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button[aria-label="Close sidebar"]');
+            if (closeBtn) {
+                closeBtn.click();
+            } else {
+                // Fallback: find any close/collapse button in sidebar header
+                const btns = window.parent.document.querySelectorAll('[data-testid="stSidebar"] button');
+                for (const b of btns) {
+                    if (b.querySelector('svg') && !b.textContent.trim()) {
+                        b.click();
+                        break;
+                    }
+                }
             }
         }
         </script>
