@@ -119,6 +119,8 @@ def check_authentication():
         try:
             # Use current URL as redirect (works locally and deployed)
             redirect_url = st.secrets.get("app_url", "http://localhost:8501")
+            st.caption(f"Debug: redirect_url = {redirect_url}")  # Debug line
+            
             response = supabase.auth.sign_in_with_oauth({
                 "provider": "google",
                 "options": {"redirect_to": redirect_url}
