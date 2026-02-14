@@ -328,11 +328,13 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
-        /* Mobile: ensure collapsed sidebar is fully hidden and doesn't bleed through */
+        /* Mobile: properly hide collapsed sidebar without breaking expand arrow */
         @media (max-width: 768px) {
             section[data-testid="stSidebar"][aria-expanded="false"] {
-                display: none !important;
+                transform: translateX(-100%) !important;
                 visibility: hidden !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
             }
         }
     </style>
