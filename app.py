@@ -388,41 +388,32 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
         <script>
         (function() {
             if (window.parent.innerWidth > 768) return;
-            function closeSidebar() {
+            function tryClose() {
                 var doc = window.parent.document;
-                // Method 1: Click any button with an SVG inside the sidebar header
-                var sidebar = doc.querySelector('[data-testid="stSidebar"]');
-                if (sidebar) {
-                    var headerBtns = sidebar.querySelectorAll('button');
-                    for (var i = 0; i < headerBtns.length; i++) {
-                        var btn = headerBtns[i];
-                        var txt = (btn.textContent || '').trim();
-                        if (!txt || txt === '') {
-                            btn.click();
-                            return;
-                        }
-                    }
+                var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+                if (!sidebar) return;
+                // Set to collapsed state
+                sidebar.setAttribute('aria-expanded', 'false');
+                // Also set width to 0 and hide content to prevent bleed-through
+                sidebar.style.cssText = 'transform: translateX(-100%) !important; width: 0px !important; min-width: 0px !important; opacity: 0 !important; pointer-events: none !important; transition: none !important;';
+                // Show the expand arrow
+                var ctrls = doc.querySelectorAll('[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]');
+                for (var i = 0; i < ctrls.length; i++) {
+                    ctrls[i].style.display = '';
+                    ctrls[i].style.visibility = 'visible';
+                    ctrls[i].style.opacity = '1';
                 }
-                // Method 2: Click the overlay/backdrop behind sidebar
-                var overlays = doc.querySelectorAll('[data-testid="stSidebar"] ~ div');
-                for (var j = 0; j < overlays.length; j++) {
-                    var style = window.parent.getComputedStyle(overlays[j]);
-                    if (style.position === 'fixed' && parseFloat(style.opacity) > 0) {
-                        overlays[j].click();
-                        return;
-                    }
-                }
-                // Method 3: Force collapse via attribute
-                if (sidebar) {
-                    sidebar.setAttribute('aria-expanded', 'false');
-                    // Find and show the collapsed control
-                    var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]') || 
-                               doc.querySelector('[data-testid="collapsedControl"]');
-                    if (ctrl) ctrl.style.display = '';
-                }
+                // Remove any overlay/backdrop
+                var overlay = doc.querySelector('[data-testid="stSidebarOverlay"]');
+                if (overlay) overlay.style.display = 'none';
+                // After closing, restore transition and pointer-events for next open
+                setTimeout(function() {
+                    sidebar.style.transition = '';
+                    sidebar.style.pointerEvents = '';
+                    sidebar.style.opacity = '';
+                }, 300);
             }
-            setTimeout(closeSidebar, 200);
-            setTimeout(closeSidebar, 500);
+            setTimeout(tryClose, 150);
         })();
         </script>
         """,
