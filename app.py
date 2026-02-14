@@ -85,7 +85,7 @@ def check_authentication():
                 }
                 .block-container {
                     padding-top: 0 !important;
-                    margin-top: -5rem !important;
+                    margin-top: -1rem !important;
                     max-width: 380px !important;
                     padding-left: 1rem !important;
                     padding-right: 1rem !important;
@@ -127,9 +127,9 @@ def check_authentication():
                 st.query_params.clear()
                 st.rerun()
             except Exception as e:
-                # PKCE mismatch or expired code — just redirect to clean login
                 st.query_params.clear()
-                st.rerun()
+                st.error(f"Auth error: {e}")
+                st.stop()
         
         if "access_token" in query_params:
             access_token = query_params["access_token"]
