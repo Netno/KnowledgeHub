@@ -61,6 +61,12 @@ def check_authentication():
             try:
                 # Exchange code for session
                 response = supabase.auth.exchange_code_for_session({"auth_code": auth_code})
+                user_email = response.user.email
+                if not is_allowed_user(user_email):
+                    supabase.auth.sign_out()
+                    st.error(f"❌ Åtkomst nekad för {user_email}. Kontakta admin.")
+                    st.query_params.clear()
+                    st.stop()
                 st.session_state.user = response
                 st.query_params.clear()
                 st.rerun()
@@ -72,6 +78,12 @@ def check_authentication():
             access_token = query_params["access_token"]
             try:
                 user = supabase.auth.get_user(access_token)
+                user_email = user.user.email
+                if not is_allowed_user(user_email):
+                    supabase.auth.sign_out()
+                    st.error(f"❌ Åtkomst nekad för {user_email}. Kontakta admin.")
+                    st.query_params.clear()
+                    st.stop()
                 st.session_state.user = user
                 st.query_params.clear()
                 st.rerun()
