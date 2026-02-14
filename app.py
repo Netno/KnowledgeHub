@@ -61,21 +61,31 @@ def check_authentication():
         # Shared card styles - works in both light and dark theme
         _card_style = """
             <style>
-                /* Kill all top spacing */
-                [data-testid="stHeader"] { display: none !important; }
-                [data-testid="stBottom"] { display: none !important; }
-                [data-testid="stDecoration"] { display: none !important; }
-                [data-testid="stToolbar"] { display: none !important; }
-                [data-testid="stStatusWidget"] { display: none !important; }
-                section[data-testid="stSidebar"] { display: none !important; }
-                [data-testid="collapsedControl"] { display: none !important; }
-                [data-testid="stSidebarCollapsedControl"] { display: none !important; }
-                .block-container { padding: 1rem 1rem 0 1rem !important; max-width: 380px !important; }
-                [data-testid="stAppViewContainer"] { padding-top: 0 !important; }
-                [data-testid="stMainBlockContainer"] { padding-top: 0 !important; max-width: 380px !important; }
-                header { display: none !important; }
-                #MainMenu { display: none !important; }
-                footer { display: none !important; }
+                /* Nuclear: kill ALL top spacing at every level */
+                html, body, [data-testid="stApp"] { margin: 0 !important; padding: 0 !important; }
+                [data-testid="stApp"] > div { padding-top: 0 !important; margin-top: 0 !important; }
+                [data-testid="stHeader"],
+                [data-testid="stBottom"],
+                [data-testid="stDecoration"],
+                [data-testid="stToolbar"],
+                [data-testid="stStatusWidget"],
+                [data-testid="stAppDeployButton"],
+                [data-testid="stSidebarCollapsedControl"],
+                [data-testid="collapsedControl"],
+                section[data-testid="stSidebar"],
+                header, #MainMenu, footer { display: none !important; }
+                [data-testid="stAppViewContainer"],
+                [data-testid="stAppViewContainer"] > div,
+                [data-testid="stMain"],
+                [data-testid="stMainBlockContainer"],
+                .block-container,
+                .stApp > div,
+                .main .block-container {
+                    padding-top: 0 !important;
+                    margin-top: 0 !important;
+                }
+                .block-container { padding: 0.5rem 1rem 0 1rem !important; max-width: 380px !important; }
+                [data-testid="stMainBlockContainer"] { max-width: 380px !important; }
                 .auth-card {
                     background: var(--secondary-background-color, #f0f2f6);
                     border-radius: 16px;
