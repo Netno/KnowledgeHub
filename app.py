@@ -9,7 +9,6 @@ import io
 import json
 import time
 import re
-from streamlit_paste_button import paste_image_button as pbutton
 
 # Configure page
 st.set_page_config(page_title="KnowledgeHub", page_icon="💡", layout="wide")
@@ -308,7 +307,7 @@ def search_entries(query, limit=10):
         return []
 
 # Main App
-st.title("💡 KnowledgeHub")
+st.markdown("<h1 style='margin-bottom:0'>💡 KnowledgeHub</h1>", unsafe_allow_html=True)
 st.caption(f"Logged in as {st.session_state.user.user.email}")
 
 # Sidebar
@@ -359,25 +358,11 @@ st.session_state.prev_page = page
 
 # Page: Add Entry
 if page == "➕ Add":
-    st.header("Add Knowledge")
+    st.subheader("Add Knowledge")
     
     # Initialize session state for attachments
     if 'attachments' not in st.session_state:
         st.session_state.attachments = []
-    
-    # Show current attachments
-    if st.session_state.attachments:
-        st.write("**Attachments:**")
-        cols = st.columns(min(len(st.session_state.attachments), 4))
-        for i, att in enumerate(st.session_state.attachments):
-            with cols[i % 4]:
-                if att['type'] == 'image':
-                    st.image(att['preview'], width=100)
-                else:
-                    st.write(f"📎 {att['name']}")
-                if st.button("✕", key=f"remove_{i}"):
-                    st.session_state.attachments.pop(i)
-                    st.rerun()
     
     # Main text input
     content = st.text_area(
@@ -387,71 +372,44 @@ if page == "➕ Add":
         label_visibility="collapsed"
     )
     
-    # Action buttons row: Paste image + Upload files
-    col1, col2 = st.columns(2)
+    # File uploader - always visible, compact
+    uploaded_files = st.file_uploader(
+        "📎 Attach files",
+        type=["png", "jpg", "jpeg", "gif", "csv", "pdf", "txt", "xlsx", "docx"],
+        accept_multiple_files=True,
+        label_visibility="collapsed"
+    )
     
-    with col1:
-        # Paste button for clipboard images
-        paste_result = pbutton("📋 Paste Image", text_color="#ffffff", background_color="#FF4B4B")
-        
-        if paste_result.image_data is not None:
-            pasted_image = paste_result.image_data
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            file_type = uploaded_file.type
             file_data = {
-                'name': f"pasted_image_{datetime.now().strftime('%H%M%S')}.png",
-                'type': 'image',
-                'preview': pasted_image,
-                'image': pasted_image,
-                'file': None
+                'name': uploaded_file.name,
+                'file': uploaded_file,
+                'processed': False
             }
-            if not any(a.get('preview') == pasted_image for a in st.session_state.attachments):
+            
+            if file_type.startswith("image/"):
+                image = Image.open(uploaded_file)
+                file_data['type'] = 'image'
+                file_data['preview'] = image
+                file_data['image'] = image
+            elif file_type == "text/csv":
+                file_data['type'] = 'csv'
+                file_data['preview'] = None
+            elif file_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                file_data['type'] = 'xlsx'
+                file_data['preview'] = None
+            elif file_type == "application/pdf":
+                file_data['type'] = 'pdf'
+                file_data['preview'] = None
+            else:
+                file_data['type'] = 'text'
+                file_data['preview'] = None
+            
+            # Avoid duplicates
+            if not any(a['name'] == file_data['name'] for a in st.session_state.attachments):
                 st.session_state.attachments.append(file_data)
-                st.rerun()
-    
-    with col2:
-        show_uploader = st.button("📁 Upload Files")
-    
-    # File uploader (shown when plus is clicked or always visible but compact)
-    if show_uploader or st.session_state.get('show_uploader', False):
-        st.session_state.show_uploader = True
-        uploaded_files = st.file_uploader(
-            "Attach files",
-            type=["png", "jpg", "jpeg", "gif", "csv", "pdf", "txt", "xlsx", "docx"],
-            accept_multiple_files=True,
-            label_visibility="collapsed"
-        )
-        
-        if uploaded_files:
-            for uploaded_file in uploaded_files:
-                file_type = uploaded_file.type
-                file_data = {
-                    'name': uploaded_file.name,
-                    'file': uploaded_file,
-                    'processed': False
-                }
-                
-                if file_type.startswith("image/"):
-                    image = Image.open(uploaded_file)
-                    file_data['type'] = 'image'
-                    file_data['preview'] = image
-                    file_data['image'] = image
-                elif file_type == "text/csv":
-                    file_data['type'] = 'csv'
-                    file_data['preview'] = None
-                elif file_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                    file_data['type'] = 'xlsx'
-                    file_data['preview'] = None
-                elif file_type == "application/pdf":
-                    file_data['type'] = 'pdf'
-                    file_data['preview'] = None
-                else:
-                    file_data['type'] = 'text'
-                    file_data['preview'] = None
-                
-                # Avoid duplicates
-                if not any(a['name'] == file_data['name'] for a in st.session_state.attachments):
-                    st.session_state.attachments.append(file_data)
-            st.session_state.show_uploader = False
-            st.rerun()
     
     # Process and save
     if st.button("💾 Save", type="primary", use_container_width=True):
