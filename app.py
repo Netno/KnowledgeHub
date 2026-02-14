@@ -61,12 +61,16 @@ def check_authentication():
         # Shared card styles - works in both light and dark theme
         _card_style = """
             <style>
-                [data-testid="stAppViewContainer"] {
-                    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+                [data-testid="stMainBlockContainer"] {
+                    max-width: 380px;
+                    width: 100%;
+                    padding-top: 1rem !important;
+                    margin: 0 auto;
                 }
-                [data-testid="stMainBlockContainer"] { max-width: 380px; width: 100%; }
                 [data-testid="stHeader"] { display: none; }
                 [data-testid="stBottom"] { display: none; }
+                [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
+                .block-container { padding-top: 1rem !important; }
                 .auth-card {
                     background: var(--secondary-background-color, #f0f2f6);
                     border-radius: 16px;
@@ -74,18 +78,9 @@ def check_authentication():
                     text-align: center;
                     margin-bottom: 0.75rem;
                 }
-                .auth-card .auth-icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
                 .auth-card h2 {
                     margin: 0 0 0.5rem 0;
                     font-size: 1.5rem;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 0.3rem;
-                }
-                .auth-card h2 img {
-                    height: 1.5rem !important;
-                    width: 1.5rem !important;
-                    vertical-align: middle;
                 }
                 .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; }
             </style>
