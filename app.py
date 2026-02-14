@@ -123,9 +123,9 @@ def check_authentication():
             })
             google_url = response.url
             
-            # Use markdown link that opens in same window
+            # Use markdown link that opens in top-level window (not iframe)
             st.markdown(f'''
-                <a href="{google_url}" target="_self" style="
+                <a href="{google_url}" target="_top" style="
                     display: inline-block;
                     padding: 0.5rem 1rem;
                     background-color: #4285f4;
