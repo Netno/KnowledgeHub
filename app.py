@@ -126,6 +126,7 @@ def check_authentication():
                 "options": {"redirect_to": redirect_url}
             })
             google_url = response.url
+            st.caption(f"Debug: google_url = {google_url[:200]}...")  # Debug line
             
             # Use markdown link that opens in same window
             st.markdown(f'''
