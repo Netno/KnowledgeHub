@@ -344,8 +344,12 @@ streamlit.components.v1.html("""
             <line x1="68" y1="20" x2="72" y2="16" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
             <line x1="28" y1="16" x2="32" y2="20" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
-        <span style="font-size:2rem; font-weight:700; color:white;">KnowledgeHub</span>
+        <span id="kh-title" style="font-size:2rem; font-weight:700;">KnowledgeHub</span>
     </div>
+    <script>
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.getElementById('kh-title').style.color = isDark ? '#FAFAFA' : '#1a1a2e';
+    </script>
 """, height=45)
 st.caption(f"Logged in as {st.session_state.user.user.email}")
 
