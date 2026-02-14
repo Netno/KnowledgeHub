@@ -30,13 +30,22 @@ model = genai.GenerativeModel(MODEL_NAME)
 
 # Allowed users (configure in secrets.toml under [access])
 ALLOWED_EMAILS = st.secrets.get("access", {}).get("allowed_emails", [])
+ALLOWED_DOMAINS = st.secrets.get("access", {}).get("allowed_domains", [])
 ADMIN_EMAILS = st.secrets.get("access", {}).get("admin_emails", [])
 
 def is_allowed_user(email):
-    """Check if email is in allowlist. If empty list, block all new registrations."""
-    if not ALLOWED_EMAILS:
-        return False  # No allowlist = no registration allowed
-    return email.lower() in [e.lower() for e in ALLOWED_EMAILS]
+    """Check if email or domain is in allowlist."""
+    if not email:
+        return False
+    email_lower = email.lower()
+    # Check specific emails
+    if email_lower in [e.lower() for e in ALLOWED_EMAILS]:
+        return True
+    # Check domain
+    domain = email_lower.split("@")[-1]
+    if domain in [d.lower() for d in ALLOWED_DOMAINS]:
+        return True
+    return False
 
 def is_admin(email):
     """Check if user is admin."""
