@@ -138,8 +138,7 @@ def check_authentication():
         st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
             <div class="auth-card">
-                <div class="auth-icon">💡</div>
-                <h2>KnowledgeHub</h2>
+                <h2>💡 KnowledgeHub</h2>
                 <p>Sign in to continue</p>
             </div>
         """, unsafe_allow_html=True)
