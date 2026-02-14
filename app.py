@@ -82,6 +82,10 @@ def check_authentication():
                 [data-testid="stMainBlockContainer"] > div > div > div:last-child {
                     margin-top: -0.5rem;
                 }
+                /* Center link button text */
+                [data-testid="stMainBlockContainer"] a[data-testid="baseLinkButton-secondary"] {
+                    display: flex; justify-content: center;
+                }
             </style>
         """
         
