@@ -123,24 +123,7 @@ def check_authentication():
             })
             google_url = response.url
             
-            # Use components.html with JS to navigate top-level window (escapes Streamlit iframe)
-            streamlit.components.v1.html(f'''
-                <a href="#" onclick="window.top.location.href='{google_url}'; return false;" style="
-                    display: inline-block;
-                    padding: 0.5rem 1rem;
-                    background-color: #4285f4;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 4px;
-                    width: 100%;
-                    text-align: center;
-                    font-weight: bold;
-                    font-family: sans-serif;
-                    font-size: 14px;
-                    cursor: pointer;
-                    box-sizing: border-box;
-                ">🔐 Logga in med Google</a>
-            ''', height=45)
+            st.link_button("🔐 Logga in med Google", google_url, use_container_width=True)
         except Exception as e:
             st.caption(f"Google login ej tillgängligt: {e}")
         
