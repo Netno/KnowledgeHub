@@ -119,14 +119,12 @@ def check_authentication():
         try:
             # Use current URL as redirect (works locally and deployed)
             redirect_url = st.secrets.get("app_url", "http://localhost:8501")
-            st.caption(f"Debug: redirect_url = {redirect_url}")  # Debug line
             
             response = supabase.auth.sign_in_with_oauth({
                 "provider": "google",
                 "options": {"redirect_to": redirect_url}
             })
             google_url = response.url
-            st.caption(f"Debug: google_url = {google_url[:200]}...")  # Debug line
             
             # Use markdown link that opens in same window
             st.markdown(f'''
@@ -302,6 +300,10 @@ st.caption(f"Logged in as {st.session_state.user.user.email}")
 user_email = st.session_state.user.user.email if st.session_state.user else None
 user_is_admin = is_admin(user_email)
 
+# Track previous page to detect sidebar selection changes
+if 'prev_page' not in st.session_state:
+    st.session_state.prev_page = None
+
 with st.sidebar:
     if user_is_admin:
         page = st.radio("", ["➕ Add", "🔍 Search", "📊 Browse", "🔧 Admin"], label_visibility="collapsed")
@@ -317,6 +319,27 @@ with st.sidebar:
     if st.button("Sign Out"):
         st.session_state.user = None
         st.rerun()
+
+# Auto-close sidebar on mobile when a selection is made
+if st.session_state.prev_page is not None and st.session_state.prev_page != page:
+    streamlit.components.v1.html(
+        """
+        <script>
+        // Only collapse on mobile/narrow screens (sidebar is overlay, not pinned)
+        if (window.parent.innerWidth <= 768) {
+            const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                sidebar.setAttribute('aria-expanded', 'false');
+                sidebar.style.transform = 'translateX(-100%)';
+                const btn = window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
+                if (btn) btn.style.display = '';
+            }
+        }
+        </script>
+        """,
+        height=0
+    )
+st.session_state.prev_page = page
 
 # Page: Add Entry
 if page == "➕ Add":
