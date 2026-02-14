@@ -324,6 +324,12 @@ def search_entries(query, limit=10):
         return []
 
 # Main App
+st.markdown("""
+    <style>
+        .block-container { padding-top: 1rem !important; }
+        [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
+    </style>
+""", unsafe_allow_html=True)
 st.markdown("<h1 style='margin-bottom:0'>KnowledgeHub</h1>", unsafe_allow_html=True)
 st.caption(f"Logged in as {st.session_state.user.user.email}")
 
