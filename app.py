@@ -328,57 +328,14 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
-        /* Mobile: hide Streamlit's native sidebar controls - we use our own hamburger */
-        @media (max-width: 768px) {
-            [data-testid="stSidebarCollapsedControl"],
-            [data-testid="collapsedControl"] {
-                display: none !important;
-            }
+        /* Hide sidebar completely - we use inline navigation */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"] {
+            display: none !important;
         }
     </style>
 """, unsafe_allow_html=True)
-
-# Helper: JS to close sidebar on mobile and show a custom hamburger button to reopen
-_close_sidebar_js = """
-<script>
-(function() {
-    if (window.parent.innerWidth > 768) return;
-    function closeSidebar() {
-        var doc = window.parent.document;
-        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-        if (!sidebar) return;
-        // Hide sidebar
-        sidebar.setAttribute('aria-expanded', 'false');
-        sidebar.style.transform = 'translateX(-100%)';
-        sidebar.style.visibility = 'hidden';
-        // Remove any existing hamburger
-        var old = doc.getElementById('kh-menu-btn');
-        if (old) old.remove();
-        // Create hamburger button
-        var btn = doc.createElement('button');
-        btn.id = 'kh-menu-btn';
-        btn.innerHTML = '&#9776;';
-        btn.style.cssText = 'position:fixed; top:0.6rem; left:0.5rem; z-index:999999; background:none; border:none; font-size:1.6rem; cursor:pointer; color:inherit; padding:4px 8px; border-radius:6px; opacity:0.7;';
-        btn.onmouseover = function() { this.style.opacity = '1'; };
-        btn.onmouseout = function() { this.style.opacity = '0.7'; };
-        btn.onclick = function() {
-            sidebar.setAttribute('aria-expanded', 'true');
-            sidebar.style.transform = '';
-            sidebar.style.visibility = '';
-            this.remove();
-        };
-        doc.body.appendChild(btn);
-    }
-    setTimeout(closeSidebar, 200);
-    setTimeout(closeSidebar, 500);
-})();
-</script>
-"""
-
-# Auto-close sidebar on mobile on first load
-if 'sidebar_init' not in st.session_state:
-    st.session_state.sidebar_init = True
-    streamlit.components.v1.html(_close_sidebar_js, height=0)
 streamlit.components.v1.html("""
     <div style="display:flex; align-items:center; gap:0; font-family: 'Source Sans Pro', sans-serif; margin-left:-20px;">
         <svg width="45" height="45" viewBox="0 0 100 100" fill="none">
@@ -400,37 +357,23 @@ streamlit.components.v1.html("""
         document.getElementById('kh-title').style.color = isDark ? '#FAFAFA' : '#1a1a2e';
     </script>
 """, height=50)
-st.caption(f"Logged in as {st.session_state.user.user.email}")
 
-# Sidebar
-# Get current user email
+# Navigation + user info
 user_email = st.session_state.user.user.email if st.session_state.user else None
 user_is_admin = is_admin(user_email)
 
-# Track previous page to detect sidebar selection changes
-if 'prev_page' not in st.session_state:
-    st.session_state.prev_page = None
-
-with st.sidebar:
+nav_col, user_col = st.columns([3, 1])
+with nav_col:
     if user_is_admin:
-        page = st.radio("", ["➕ Add", "🔍 Search", "📊 Browse", "🔧 Admin"], label_visibility="collapsed")
+        page = st.selectbox("", ["➕ Add", "🔍 Search", "📊 Browse", "🔧 Admin"], label_visibility="collapsed")
     else:
-        page = st.radio("", ["🔍 Search"], label_visibility="collapsed")
-    
-    st.divider()
-    if user_is_admin:
-        st.caption(f"👑 Admin: {user_email}")
-    else:
-        st.caption(f"👤 {user_email}")
-    
-    if st.button("Sign Out"):
+        page = st.selectbox("", ["🔍 Search"], label_visibility="collapsed")
+with user_col:
+    if st.button("Sign Out", use_container_width=True):
         st.session_state.user = None
         st.rerun()
 
-# Auto-close sidebar on mobile when a selection is made
-if st.session_state.prev_page is not None and st.session_state.prev_page != page:
-    streamlit.components.v1.html(_close_sidebar_js, height=0)
-st.session_state.prev_page = page
+st.caption(f"{'👑' if user_is_admin else '👤'} {user_email}")
 
 # Page: Add Entry
 if page == "➕ Add":
