@@ -387,20 +387,20 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
         """
         <script>
         if (window.parent.innerWidth <= 768) {
-            // Click the actual close button instead of manipulating CSS
-            const closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button[aria-label="Close sidebar"]');
-            if (closeBtn) {
-                closeBtn.click();
-            } else {
-                // Fallback: find any close/collapse button in sidebar header
-                const btns = window.parent.document.querySelectorAll('[data-testid="stSidebar"] button');
-                for (const b of btns) {
-                    if (b.querySelector('svg') && !b.textContent.trim()) {
-                        b.click();
-                        break;
-                    }
+            setTimeout(function() {
+                // Try clicking the X button in sidebar
+                const closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button[aria-label="Close sidebar"]');
+                if (closeBtn) {
+                    closeBtn.click();
+                    return;
                 }
-            }
+                // Fallback: click the collapse button (the >> icon)
+                const collapseBtn = window.parent.document.querySelector('[data-testid="stSidebarNavCollapseIcon"]');
+                if (collapseBtn) { collapseBtn.closest('button')?.click(); return; }
+                // Last resort: simulate pressing Escape to close sidebar overlay
+                const evt = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true });
+                window.parent.document.dispatchEvent(evt);
+            }, 100);
         }
         </script>
         """,
