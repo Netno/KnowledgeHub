@@ -149,7 +149,7 @@ def check_authentication():
         st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
             <div class="auth-card">
-                <h2><span style="font-size:1.4rem">&#x1F4A1;</span> KnowledgeHub</h2>
+                <h2>KnowledgeHub</h2>
                 <p>Sign in to continue</p>
             </div>
         """, unsafe_allow_html=True)
@@ -312,7 +312,7 @@ def search_entries(query, limit=10):
         return []
 
 # Main App
-st.markdown("<h1 style='margin-bottom:0'>💡 KnowledgeHub</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='margin-bottom:0'>KnowledgeHub</h1>", unsafe_allow_html=True)
 st.caption(f"Logged in as {st.session_state.user.user.email}")
 
 # Sidebar
