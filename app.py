@@ -75,7 +75,18 @@ def check_authentication():
                     margin-bottom: 0.75rem;
                 }
                 .auth-card .auth-icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
-                .auth-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
+                .auth-card h2 {
+                    margin: 0 0 0.5rem 0;
+                    font-size: 1.5rem;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                }
+                .auth-card h2 img {
+                    height: 1.5rem !important;
+                    width: 1.5rem !important;
+                    vertical-align: middle;
+                }
                 .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; }
             </style>
         """
@@ -138,9 +149,7 @@ def check_authentication():
         st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
             <div class="auth-card">
-                <h2 style="display: inline-flex; align-items: center; gap: 0.3rem;">
-                    <span style="font-size: 1.5rem;">💡</span> KnowledgeHub
-                </h2>
+                <h2>💡 KnowledgeHub</h2>
                 <p>Sign in to continue</p>
             </div>
         """, unsafe_allow_html=True)
