@@ -59,40 +59,59 @@ def check_authentication():
         st.session_state.user = None
     
     if st.session_state.user is None:
+        # Shared card styles
+        _card_style = """
+            <style>
+                [data-testid="stAppViewContainer"] {
+                    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+                }
+                [data-testid="stMainBlockContainer"] { max-width: 420px; width: 100%; }
+                [data-testid="stHeader"] { display: none; }
+                /* Style the card container */
+                .auth-card {
+                    background: rgba(25, 25, 35, 0.9);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 20px;
+                    padding: 2.5rem 2rem 2rem;
+                    text-align: center;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+                }
+                .auth-card h2 { margin-bottom: 0.3rem; }
+                .auth-card p { color: #999; margin-bottom: 0; }
+                /* Put button inside the visual card area */
+                [data-testid="stMainBlockContainer"] > div > div > div:last-child {
+                    margin-top: -0.5rem;
+                }
+            </style>
+        """
+        
         # Check for OAuth code in URL (Supabase PKCE flow)
         query_params = st.query_params
         
         if "code" in query_params:
             auth_code = query_params["code"]
             try:
-                # Exchange code for session
                 response = supabase.auth.exchange_code_for_session({"auth_code": auth_code})
                 user_email = response.user.email
                 if not is_allowed_user(user_email):
                     supabase.auth.sign_out()
                     st.query_params.clear()
-                    # Show access denied page
+                    st.markdown(_card_style, unsafe_allow_html=True)
                     st.markdown("""
-                        <style>
-                            [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-                            [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
-                        </style>
+                        <div class="auth-card">
+                            <h2 style="color: #ff6b6b;">Access Denied</h2>
+                            <p>You do not have permission to sign in.</p>
+                        </div>
                     """, unsafe_allow_html=True)
-                    with st.container():
-                        st.markdown(f"""
-                            <div style="background: rgba(30,30,40,0.85); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
-                                <h2 style="color: #ff6b6b; margin-bottom: 0.5rem;">Access Denied</h2>
-                                <p style="color: #ccc; margin-bottom: 1.5rem;">You do not have permission to sign in.</p>
-                            </div>
-                        """, unsafe_allow_html=True)
                     st.link_button("Sign in", st.secrets.get("app_url", "http://localhost:8501"), use_container_width=True)
                     st.stop()
                 st.session_state.user = response
                 st.query_params.clear()
                 st.rerun()
             except Exception as e:
-                st.error(f"Google login failed: {e}")
+                # PKCE mismatch or expired code — just redirect to clean login
                 st.query_params.clear()
+                st.rerun()
         
         if "access_token" in query_params:
             access_token = query_params["access_token"]
@@ -102,53 +121,39 @@ def check_authentication():
                 if not is_allowed_user(user_email):
                     supabase.auth.sign_out()
                     st.query_params.clear()
+                    st.markdown(_card_style, unsafe_allow_html=True)
                     st.markdown("""
-                        <style>
-                            [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-                            [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
-                        </style>
+                        <div class="auth-card">
+                            <h2 style="color: #ff6b6b;">Access Denied</h2>
+                            <p>You do not have permission to sign in.</p>
+                        </div>
                     """, unsafe_allow_html=True)
-                    with st.container():
-                        st.markdown(f"""
-                            <div style="background: rgba(30,30,40,0.85); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
-                                <h2 style="color: #ff6b6b; margin-bottom: 0.5rem;">Access Denied</h2>
-                                <p style="color: #ccc; margin-bottom: 1.5rem;">You do not have permission to sign in.</p>
-                            </div>
-                        """, unsafe_allow_html=True)
                     st.link_button("Sign in", st.secrets.get("app_url", "http://localhost:8501"), use_container_width=True)
                     st.stop()
                 st.session_state.user = user
                 st.query_params.clear()
                 st.rerun()
             except Exception as e:
-                st.error(f"Authentication failed: {e}")
                 st.query_params.clear()
+                st.rerun()
         
-        # Centered login card
+        # Login page
+        st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
-            <style>
-                [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-                [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
-                [data-testid="stHeader"] { display: none; }
-            </style>
+            <div class="auth-card">
+                <h2>💡 KnowledgeHub</h2>
+                <p>Sign in to continue</p>
+            </div>
         """, unsafe_allow_html=True)
         
-        with st.container():
-            st.markdown("""
-                <div style="text-align: center; margin-bottom: 1rem;">
-                    <h1 style="margin-bottom: 0.25rem;">💡 KnowledgeHub</h1>
-                    <p style="color: #888;">Sign in to continue</p>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            try:
-                response = supabase.auth.sign_in_with_oauth({
-                    "provider": "google"
-                })
-                google_url = response.url
-                st.link_button("🔐 Sign in with Google", google_url, use_container_width=True)
-            except Exception as e:
-                st.caption(f"Google login ej tillgängligt: {e}")
+        try:
+            response = supabase.auth.sign_in_with_oauth({
+                "provider": "google"
+            })
+            google_url = response.url
+            st.link_button("🔐 Sign in with Google", google_url, use_container_width=True)
+        except Exception as e:
+            st.caption(f"Google login ej tillgängligt: {e}")
         
         st.stop()
 
