@@ -363,19 +363,58 @@ streamlit.components.v1.html("""
 user_email = st.session_state.user.user.email if st.session_state.user else None
 user_is_admin = is_admin(user_email)
 
-if user_is_admin:
-    page = option_menu(
-        menu_title=None,
-        options=["Add", "Search", "Browse", "Admin"],
-        icons=["plus-circle", "search", "folder", "gear"],
-        orientation="horizontal",
-        styles={
-            "container": {"padding": "0!important", "margin-bottom": "0.5rem"},
-            "nav-link": {"font-size": "0.85rem", "padding": "0.4rem 0.6rem"},
-            "nav-link-selected": {"background-color": "#FBBF24", "color": "#1a1a2e"},
+# Detect mobile via CSS: show option_menu on desktop, selectbox on mobile
+st.markdown("""
+    <style>
+        /* Desktop: show option_menu, hide selectbox nav */
+        @media (min-width: 769px) {
+            .mobile-nav { display: none !important; }
         }
-    )
-    page = {"Add": "➕ Add", "Search": "🔍 Search", "Browse": "📊 Browse", "Admin": "🔧 Admin"}[page]
+        /* Mobile: hide option_menu, show selectbox nav */
+        @media (max-width: 768px) {
+            .desktop-nav iframe { display: none !important; }
+            .desktop-nav { min-height: 0 !important; height: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+if user_is_admin:
+    # Desktop: horizontal option_menu
+    with st.container():
+        st.markdown('<div class="desktop-nav">', unsafe_allow_html=True)
+        desktop_page = option_menu(
+            menu_title=None,
+            options=["Add", "Search", "Browse", "Admin"],
+            icons=["plus-circle", "search", "folder", "gear"],
+            orientation="horizontal",
+            key="desktop_nav",
+            styles={
+                "container": {"padding": "0!important", "margin-bottom": "0.5rem"},
+                "nav-link": {"font-size": "0.85rem", "padding": "0.4rem 0.6rem"},
+                "nav-link-selected": {"background-color": "#FBBF24", "color": "#1a1a2e"},
+            }
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Mobile: selectbox dropdown
+    with st.container():
+        st.markdown('<div class="mobile-nav">', unsafe_allow_html=True)
+        mobile_page = st.selectbox(
+            "Navigate",
+            ["➕ Add", "🔍 Search", "📊 Browse", "🔧 Admin"],
+            label_visibility="collapsed",
+            key="mobile_nav"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Use whichever value changed (both always render but one is hidden)
+    page_map = {"Add": "➕ Add", "Search": "🔍 Search", "Browse": "📊 Browse", "Admin": "🔧 Admin"}
+    desktop_mapped = page_map.get(desktop_page, "🔍 Search")
+    # Sync: use mobile value if it differs from desktop mapping
+    if mobile_page != desktop_mapped:
+        page = mobile_page
+    else:
+        page = desktop_mapped
 else:
     page = "🔍 Search"
 
