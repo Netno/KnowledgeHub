@@ -328,49 +328,50 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
-        /* Mobile: properly hide collapsed sidebar without breaking expand arrow */
-        @media (max-width: 768px) {
-            section[data-testid="stSidebar"][aria-expanded="false"] {
-                transform: translateX(-100%) !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-                z-index: -1 !important;
-            }
-        }
     </style>
 """, unsafe_allow_html=True)
+
+# Helper: JS to close sidebar on mobile and show a custom hamburger button to reopen
+_close_sidebar_js = """
+<script>
+(function() {
+    if (window.parent.innerWidth > 768) return;
+    function closeSidebar() {
+        var doc = window.parent.document;
+        var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+        if (!sidebar) return;
+        // Hide sidebar
+        sidebar.setAttribute('aria-expanded', 'false');
+        sidebar.style.transform = 'translateX(-100%)';
+        sidebar.style.visibility = 'hidden';
+        // Remove any existing hamburger
+        var old = doc.getElementById('kh-menu-btn');
+        if (old) old.remove();
+        // Create hamburger button
+        var btn = doc.createElement('button');
+        btn.id = 'kh-menu-btn';
+        btn.innerHTML = '&#9776;';
+        btn.style.cssText = 'position:fixed; top:0.6rem; left:0.5rem; z-index:999999; background:none; border:none; font-size:1.6rem; cursor:pointer; color:inherit; padding:4px 8px; border-radius:6px; opacity:0.7;';
+        btn.onmouseover = function() { this.style.opacity = '1'; };
+        btn.onmouseout = function() { this.style.opacity = '0.7'; };
+        btn.onclick = function() {
+            sidebar.setAttribute('aria-expanded', 'true');
+            sidebar.style.transform = '';
+            sidebar.style.visibility = '';
+            this.remove();
+        };
+        doc.body.appendChild(btn);
+    }
+    setTimeout(closeSidebar, 200);
+    setTimeout(closeSidebar, 500);
+})();
+</script>
+"""
 
 # Auto-close sidebar on mobile on first load
 if 'sidebar_init' not in st.session_state:
     st.session_state.sidebar_init = True
-    streamlit.components.v1.html(
-        """
-        <script>
-        (function() {
-            if (window.parent.innerWidth > 768) return;
-            function tryClose() {
-                var doc = window.parent.document;
-                var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                sidebar.setAttribute('aria-expanded', 'false');
-                // Inject style to show expand control
-                if (!doc.getElementById('kh-sidebar-fix')) {
-                    var style = doc.createElement('style');
-                    style.id = 'kh-sidebar-fix';
-                    style.textContent = '[data-testid="stSidebarCollapsedControl"] { display: flex !important; }';
-                    doc.head.appendChild(style);
-                }
-                // Force show expand control
-                var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]');
-                if (ctrl) { ctrl.style.display = 'flex'; ctrl.style.visibility = 'visible'; }
-            }
-            setTimeout(tryClose, 300);
-            setTimeout(tryClose, 700);
-        })();
-        </script>
-        """,
-        height=0
-    )
+    streamlit.components.v1.html(_close_sidebar_js, height=0)
 streamlit.components.v1.html("""
     <div style="display:flex; align-items:center; gap:0; font-family: 'Source Sans Pro', sans-serif; margin-left:-20px;">
         <svg width="45" height="45" viewBox="0 0 100 100" fill="none">
@@ -421,33 +422,7 @@ with st.sidebar:
 
 # Auto-close sidebar on mobile when a selection is made
 if st.session_state.prev_page is not None and st.session_state.prev_page != page:
-    streamlit.components.v1.html(
-        """
-        <script>
-        (function() {
-            if (window.parent.innerWidth > 768) return;
-            function tryClose() {
-                var doc = window.parent.document;
-                var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                sidebar.setAttribute('aria-expanded', 'false');
-                // Inject style to show expand control
-                if (!doc.getElementById('kh-sidebar-fix')) {
-                    var style = doc.createElement('style');
-                    style.id = 'kh-sidebar-fix';
-                    style.textContent = '[data-testid="stSidebarCollapsedControl"] { display: flex !important; }';
-                    doc.head.appendChild(style);
-                }
-                var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]');
-                if (ctrl) { ctrl.style.display = 'flex'; ctrl.style.visibility = 'visible'; }
-            }
-            setTimeout(tryClose, 100);
-            setTimeout(tryClose, 400);
-        })();
-        </script>
-        """,
-        height=0
-    )
+    streamlit.components.v1.html(_close_sidebar_js, height=0)
 st.session_state.prev_page = page
 
 # Page: Add Entry
