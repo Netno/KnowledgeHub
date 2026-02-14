@@ -84,8 +84,8 @@ def check_authentication():
                     margin-top: 0 !important;
                 }
                 .block-container {
-                    padding-top: 0 !important;
-                    margin-top: -1rem !important;
+                    padding-top: 100px !important;
+                    margin-top: 0 !important;
                     max-width: 380px !important;
                     padding-left: 1rem !important;
                     padding-right: 1rem !important;
