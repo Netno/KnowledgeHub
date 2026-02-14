@@ -123,9 +123,9 @@ def check_authentication():
             })
             google_url = response.url
             
-            # Use markdown link that opens in top-level window (not iframe)
-            st.markdown(f'''
-                <a href="{google_url}" target="_top" style="
+            # Use components.html with JS to navigate top-level window (escapes Streamlit iframe)
+            streamlit.components.v1.html(f'''
+                <a href="#" onclick="window.top.location.href='{google_url}'; return false;" style="
                     display: inline-block;
                     padding: 0.5rem 1rem;
                     background-color: #4285f4;
@@ -135,8 +135,12 @@ def check_authentication():
                     width: 100%;
                     text-align: center;
                     font-weight: bold;
+                    font-family: sans-serif;
+                    font-size: 14px;
+                    cursor: pointer;
+                    box-sizing: border-box;
                 ">🔐 Logga in med Google</a>
-            ''', unsafe_allow_html=True)
+            ''', height=45)
         except Exception as e:
             st.caption(f"Google login ej tillgängligt: {e}")
         
