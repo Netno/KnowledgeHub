@@ -383,12 +383,12 @@ if page == "➕ Add":
     content = st.text_area(
         "What do you want to save?",
         placeholder="Type or paste text here...",
-        height=150,
+        height=75,
         label_visibility="collapsed"
     )
     
     # Action buttons row: Paste image + Upload files
-    col1, col2, col3 = st.columns([1, 1, 4])
+    col1, col2 = st.columns(2)
     
     with col1:
         # Paste button for clipboard images
