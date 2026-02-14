@@ -386,22 +386,44 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
     streamlit.components.v1.html(
         """
         <script>
-        if (window.parent.innerWidth <= 768) {
-            setTimeout(function() {
-                // Try clicking the X button in sidebar
-                const closeBtn = window.parent.document.querySelector('[data-testid="stSidebar"] button[aria-label="Close sidebar"]');
-                if (closeBtn) {
-                    closeBtn.click();
-                    return;
+        (function() {
+            if (window.parent.innerWidth > 768) return;
+            function closeSidebar() {
+                var doc = window.parent.document;
+                // Method 1: Click any button with an SVG inside the sidebar header
+                var sidebar = doc.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    var headerBtns = sidebar.querySelectorAll('button');
+                    for (var i = 0; i < headerBtns.length; i++) {
+                        var btn = headerBtns[i];
+                        var txt = (btn.textContent || '').trim();
+                        if (!txt || txt === '') {
+                            btn.click();
+                            return;
+                        }
+                    }
                 }
-                // Fallback: click the collapse button (the >> icon)
-                const collapseBtn = window.parent.document.querySelector('[data-testid="stSidebarNavCollapseIcon"]');
-                if (collapseBtn) { collapseBtn.closest('button')?.click(); return; }
-                // Last resort: simulate pressing Escape to close sidebar overlay
-                const evt = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true });
-                window.parent.document.dispatchEvent(evt);
-            }, 100);
-        }
+                // Method 2: Click the overlay/backdrop behind sidebar
+                var overlays = doc.querySelectorAll('[data-testid="stSidebar"] ~ div');
+                for (var j = 0; j < overlays.length; j++) {
+                    var style = window.parent.getComputedStyle(overlays[j]);
+                    if (style.position === 'fixed' && parseFloat(style.opacity) > 0) {
+                        overlays[j].click();
+                        return;
+                    }
+                }
+                // Method 3: Force collapse via attribute
+                if (sidebar) {
+                    sidebar.setAttribute('aria-expanded', 'false');
+                    // Find and show the collapsed control
+                    var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]') || 
+                               doc.querySelector('[data-testid="collapsedControl"]');
+                    if (ctrl) ctrl.style.display = '';
+                }
+            }
+            setTimeout(closeSidebar, 200);
+            setTimeout(closeSidebar, 500);
+        })();
         </script>
         """,
         height=0
