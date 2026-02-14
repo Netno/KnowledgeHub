@@ -61,16 +61,21 @@ def check_authentication():
         # Shared card styles - works in both light and dark theme
         _card_style = """
             <style>
-                [data-testid="stMainBlockContainer"] {
-                    max-width: 380px;
-                    width: 100%;
-                    padding-top: 1rem !important;
-                    margin: 0 auto;
-                }
-                [data-testid="stHeader"] { display: none; }
-                [data-testid="stBottom"] { display: none; }
-                [data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
-                .block-container { padding-top: 1rem !important; }
+                /* Kill all top spacing */
+                [data-testid="stHeader"] { display: none !important; }
+                [data-testid="stBottom"] { display: none !important; }
+                [data-testid="stDecoration"] { display: none !important; }
+                [data-testid="stToolbar"] { display: none !important; }
+                [data-testid="stStatusWidget"] { display: none !important; }
+                section[data-testid="stSidebar"] { display: none !important; }
+                [data-testid="collapsedControl"] { display: none !important; }
+                [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+                .block-container { padding: 1rem 1rem 0 1rem !important; max-width: 380px !important; }
+                [data-testid="stAppViewContainer"] { padding-top: 0 !important; }
+                [data-testid="stMainBlockContainer"] { padding-top: 0 !important; max-width: 380px !important; }
+                header { display: none !important; }
+                #MainMenu { display: none !important; }
+                footer { display: none !important; }
                 .auth-card {
                     background: var(--secondary-background-color, #f0f2f6);
                     border-radius: 16px;
@@ -78,10 +83,7 @@ def check_authentication():
                     text-align: center;
                     margin-bottom: 0.75rem;
                 }
-                .auth-card h2 {
-                    margin: 0 0 0.5rem 0;
-                    font-size: 1.5rem;
-                }
+                .auth-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
                 .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; }
             </style>
         """
