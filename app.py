@@ -117,12 +117,9 @@ def check_authentication():
         st.write("Eller logga in med:")
         
         try:
-            # Use current URL as redirect (works locally and deployed)
-            redirect_url = st.secrets.get("app_url", "http://localhost:8501")
-            
+            # Supabase will redirect to the Site URL configured in dashboard after OAuth
             response = supabase.auth.sign_in_with_oauth({
-                "provider": "google",
-                "options": {"redirect_to": redirect_url}
+                "provider": "google"
             })
             google_url = response.url
             
