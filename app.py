@@ -138,7 +138,9 @@ def check_authentication():
         st.markdown(_card_style, unsafe_allow_html=True)
         st.markdown("""
             <div class="auth-card">
-                <h2>💡 KnowledgeHub</h2>
+                <h2 style="display: inline-flex; align-items: center; gap: 0.3rem;">
+                    <span style="font-size: 1.5rem;">💡</span> KnowledgeHub
+                </h2>
                 <p>Sign in to continue</p>
             </div>
         """, unsafe_allow_html=True)
