@@ -328,6 +328,13 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
+        /* Mobile: hide Streamlit's native sidebar controls - we use our own hamburger */
+        @media (max-width: 768px) {
+            [data-testid="stSidebarCollapsedControl"],
+            [data-testid="collapsedControl"] {
+                display: none !important;
+            }
+        }
     </style>
 """, unsafe_allow_html=True)
 
