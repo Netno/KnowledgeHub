@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1
+from streamlit_option_menu import option_menu
 from supabase import create_client, Client
 import google.generativeai as genai
 from datetime import datetime
@@ -362,18 +363,29 @@ streamlit.components.v1.html("""
 user_email = st.session_state.user.user.email if st.session_state.user else None
 user_is_admin = is_admin(user_email)
 
-nav_col, user_col = st.columns([3, 1])
-with nav_col:
-    if user_is_admin:
-        page = st.selectbox("", ["➕ Add", "🔍 Search", "📊 Browse", "🔧 Admin"], label_visibility="collapsed")
-    else:
-        page = st.selectbox("", ["🔍 Search"], label_visibility="collapsed")
-with user_col:
+if user_is_admin:
+    page = option_menu(
+        menu_title=None,
+        options=["Add", "Search", "Browse", "Admin"],
+        icons=["plus-circle", "search", "folder", "gear"],
+        orientation="horizontal",
+        styles={
+            "container": {"padding": "0!important", "margin-bottom": "0.5rem"},
+            "nav-link": {"font-size": "0.85rem", "padding": "0.4rem 0.6rem"},
+            "nav-link-selected": {"background-color": "#FBBF24", "color": "#1a1a2e"},
+        }
+    )
+    page = {"Add": "➕ Add", "Search": "🔍 Search", "Browse": "📊 Browse", "Admin": "🔧 Admin"}[page]
+else:
+    page = "🔍 Search"
+
+col_user, col_signout = st.columns([4, 1])
+with col_user:
+    st.caption(f"{'👑' if user_is_admin else '👤'} {user_email}")
+with col_signout:
     if st.button("Sign Out", use_container_width=True):
         st.session_state.user = None
         st.rerun()
-
-st.caption(f"{'👑' if user_is_admin else '👤'} {user_email}")
 
 # Page: Add Entry
 if page == "➕ Add":
