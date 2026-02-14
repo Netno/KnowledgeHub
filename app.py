@@ -330,7 +330,24 @@ st.markdown("""
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
     </style>
 """, unsafe_allow_html=True)
-st.markdown("<h1 style='margin-bottom:0'>KnowledgeHub</h1>", unsafe_allow_html=True)
+st.markdown("""
+    <h1 style='margin-bottom:0; display:flex; align-items:center; gap:0.4rem;'>
+        <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="40" r="24" fill="#FBBF24" opacity="0.25"/>
+            <path d="M50 18C38.95 18 30 26.95 30 38c0 7.5 4.1 14 10.2 17.5 1.3.75 2.3 2 2.6 3.5l.7 3h12.9l.7-3c.3-1.5 1.3-2.75 2.6-3.5C65.9 52 70 45.5 70 38c0-11.05-8.95-20-20-20z" fill="#FBBF24"/>
+            <path d="M50 18C38.95 18 30 26.95 30 38c0 7.5 4.1 14 10.2 17.5" stroke="#F59E0B" stroke-width="2" fill="none"/>
+            <rect x="40" y="65" width="20" height="4" rx="2" fill="#9CA3AF"/>
+            <rect x="42" y="71" width="16" height="4" rx="2" fill="#9CA3AF"/>
+            <rect x="44" y="77" width="12" height="4" rx="2" fill="#9CA3AF"/>
+            <line x1="50" y1="8" x2="50" y2="14" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="76" y1="38" x2="82" y2="38" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="18" y1="38" x2="24" y2="38" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="68" y1="20" x2="72" y2="16" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="28" y1="16" x2="32" y2="20" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        KnowledgeHub
+    </h1>
+""", unsafe_allow_html=True)
 st.caption(f"Logged in as {st.session_state.user.user.email}")
 
 # Sidebar
