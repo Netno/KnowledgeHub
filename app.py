@@ -59,9 +59,6 @@ def check_authentication():
         st.session_state.user = None
     
     if st.session_state.user is None:
-        st.title("🔐 Welcome to KnowledgeHub")
-        st.write("Please sign in to continue")
-        
         # Check for OAuth code in URL (Supabase PKCE flow)
         query_params = st.query_params
         
@@ -73,8 +70,22 @@ def check_authentication():
                 user_email = response.user.email
                 if not is_allowed_user(user_email):
                     supabase.auth.sign_out()
-                    st.error(f"❌ Åtkomst nekad för {user_email}. Kontakta admin.")
                     st.query_params.clear()
+                    # Show access denied page
+                    st.markdown("""
+                        <style>
+                            [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+                            [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
+                        </style>
+                    """, unsafe_allow_html=True)
+                    with st.container():
+                        st.markdown(f"""
+                            <div style="background: rgba(30,30,40,0.85); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+                                <h2 style="color: #ff6b6b; margin-bottom: 0.5rem;">Access Denied</h2>
+                                <p style="color: #ccc; margin-bottom: 1.5rem;">You do not have permission to sign in.</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    st.link_button("Sign in", st.secrets.get("app_url", "http://localhost:8501"), use_container_width=True)
                     st.stop()
                 st.session_state.user = response
                 st.query_params.clear()
@@ -90,8 +101,21 @@ def check_authentication():
                 user_email = user.user.email
                 if not is_allowed_user(user_email):
                     supabase.auth.sign_out()
-                    st.error(f"❌ Åtkomst nekad för {user_email}. Kontakta admin.")
                     st.query_params.clear()
+                    st.markdown("""
+                        <style>
+                            [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+                            [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
+                        </style>
+                    """, unsafe_allow_html=True)
+                    with st.container():
+                        st.markdown(f"""
+                            <div style="background: rgba(30,30,40,0.85); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.3);">
+                                <h2 style="color: #ff6b6b; margin-bottom: 0.5rem;">Access Denied</h2>
+                                <p style="color: #ccc; margin-bottom: 1.5rem;">You do not have permission to sign in.</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                    st.link_button("Sign in", st.secrets.get("app_url", "http://localhost:8501"), use_container_width=True)
                     st.stop()
                 st.session_state.user = user
                 st.query_params.clear()
@@ -100,53 +124,31 @@ def check_authentication():
                 st.error(f"Authentication failed: {e}")
                 st.query_params.clear()
         
-        with st.form("login_form"):
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                submitted = st.form_submit_button("Sign In", type="primary")
-            with col2:
-                signup = st.form_submit_button("Sign Up")
-            
-            if submitted:
-                try:
-                    response = supabase.auth.sign_in_with_password({
-                        "email": email,
-                        "password": password
-                    })
-                    st.session_state.user = response
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Login failed: {e}")
-            
-            if signup:
-                if not is_allowed_user(email):
-                    st.error("❌ Registrering är inte tillåten för denna email.")
-                else:
-                    try:
-                        response = supabase.auth.sign_up({
-                            "email": email,
-                            "password": password
-                        })
-                        st.success("Konto skapat! Logga in.")
-                    except Exception as e:
-                        st.error(f"Sign up failed: {e}")
+        # Centered login card
+        st.markdown("""
+            <style>
+                [data-testid="stAppViewContainer"] { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+                [data-testid="stMainBlockContainer"] { max-width: 400px; width: 100%; }
+                [data-testid="stHeader"] { display: none; }
+            </style>
+        """, unsafe_allow_html=True)
         
-        st.divider()
-        st.write("Eller logga in med:")
-        
-        try:
-            # Supabase will redirect to the Site URL configured in dashboard after OAuth
-            response = supabase.auth.sign_in_with_oauth({
-                "provider": "google"
-            })
-            google_url = response.url
+        with st.container():
+            st.markdown("""
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h1 style="margin-bottom: 0.25rem;">💡 KnowledgeHub</h1>
+                    <p style="color: #888;">Sign in to continue</p>
+                </div>
+            """, unsafe_allow_html=True)
             
-            st.link_button("🔐 Logga in med Google", google_url, use_container_width=True)
-        except Exception as e:
-            st.caption(f"Google login ej tillgängligt: {e}")
+            try:
+                response = supabase.auth.sign_in_with_oauth({
+                    "provider": "google"
+                })
+                google_url = response.url
+                st.link_button("🔐 Sign in with Google", google_url, use_container_width=True)
+            except Exception as e:
+                st.caption(f"Google login ej tillgängligt: {e}")
         
         st.stop()
 
