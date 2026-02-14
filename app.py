@@ -96,9 +96,10 @@ def check_authentication():
                     padding: 2rem 1.5rem 1.5rem;
                     text-align: center;
                     margin-bottom: 0.75rem;
+                    color: #1a1a2e;
                 }
-                .auth-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; }
-                .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; }
+                .auth-card h2 { margin: 0 0 0.5rem 0; font-size: 1.5rem; color: #1a1a2e; }
+                .auth-card p { opacity: 0.6; margin: 0; font-size: 0.9rem; color: #1a1a2e; }
             </style>
         """
         
