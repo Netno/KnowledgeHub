@@ -328,9 +328,23 @@ st.markdown("""
     <style>
         .block-container { padding-top: 1rem !important; }
         [data-testid="stHeader"] { height: 2rem !important; min-height: 2rem !important; }
-        /* Ensure sidebar controls are always visible */
-        [data-testid="stSidebarCollapsedControl"],
-        [data-testid="collapsedControl"] { display: flex !important; opacity: 1 !important; z-index: 999 !important; }
+        /* Mobile: ensure collapsed sidebar is fully hidden and doesn't bleed through */
+        @media (max-width: 768px) {
+            section[data-testid="stSidebar"][aria-expanded="false"] {
+                display: none !important;
+                visibility: hidden !important;
+                width: 0 !important;
+                min-width: 0 !important;
+                overflow: hidden !important;
+            }
+            /* Always show the expand arrow */
+            [data-testid="stSidebarCollapsedControl"] {
+                display: flex !important;
+                opacity: 1 !important;
+                z-index: 999 !important;
+                position: fixed !important;
+            }
+        }
     </style>
 """, unsafe_allow_html=True)
 streamlit.components.v1.html("""
@@ -391,29 +405,13 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
             function tryClose() {
                 var doc = window.parent.document;
                 var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-                if (!sidebar) return;
-                // Set to collapsed state
-                sidebar.setAttribute('aria-expanded', 'false');
-                // Also set width to 0 and hide content to prevent bleed-through
-                sidebar.style.cssText = 'transform: translateX(-100%) !important; width: 0px !important; min-width: 0px !important; opacity: 0 !important; pointer-events: none !important; transition: none !important;';
-                // Show the expand arrow
-                var ctrls = doc.querySelectorAll('[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]');
-                for (var i = 0; i < ctrls.length; i++) {
-                    ctrls[i].style.display = '';
-                    ctrls[i].style.visibility = 'visible';
-                    ctrls[i].style.opacity = '1';
+                if (sidebar) {
+                    sidebar.setAttribute('aria-expanded', 'false');
                 }
-                // Remove any overlay/backdrop
-                var overlay = doc.querySelector('[data-testid="stSidebarOverlay"]');
-                if (overlay) overlay.style.display = 'none';
-                // After closing, restore transition and pointer-events for next open
-                setTimeout(function() {
-                    sidebar.style.transition = '';
-                    sidebar.style.pointerEvents = '';
-                    sidebar.style.opacity = '';
-                }, 300);
             }
-            setTimeout(tryClose, 150);
+            setTimeout(tryClose, 100);
+            setTimeout(tryClose, 300);
+            setTimeout(tryClose, 600);
         })();
         </script>
         """,
