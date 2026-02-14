@@ -61,9 +61,7 @@ def check_authentication():
         # Shared card styles - works in both light and dark theme
         _card_style = """
             <style>
-                /* Nuclear: kill ALL top spacing at every level */
-                html, body, [data-testid="stApp"] { margin: 0 !important; padding: 0 !important; }
-                [data-testid="stApp"] > div { padding-top: 0 !important; margin-top: 0 !important; }
+                /* Hide Streamlit chrome */
                 [data-testid="stHeader"],
                 [data-testid="stBottom"],
                 [data-testid="stDecoration"],
@@ -73,19 +71,25 @@ def check_authentication():
                 [data-testid="stSidebarCollapsedControl"],
                 [data-testid="collapsedControl"],
                 section[data-testid="stSidebar"],
-                header, #MainMenu, footer { display: none !important; }
+                header, #MainMenu, footer { display: none !important; height: 0 !important; min-height: 0 !important; }
+                /* Force zero top spacing everywhere */
+                html, body { margin: 0 !important; padding: 0 !important; }
+                [data-testid="stApp"],
+                [data-testid="stApp"] > div,
                 [data-testid="stAppViewContainer"],
                 [data-testid="stAppViewContainer"] > div,
                 [data-testid="stMain"],
-                [data-testid="stMainBlockContainer"],
-                .block-container,
-                .stApp > div,
-                .main .block-container {
+                [data-testid="stMainBlockContainer"] {
                     padding-top: 0 !important;
                     margin-top: 0 !important;
                 }
-                .block-container { padding: 0.5rem 1rem 0 1rem !important; max-width: 380px !important; }
-                [data-testid="stMainBlockContainer"] { max-width: 380px !important; }
+                .block-container {
+                    padding-top: 0 !important;
+                    margin-top: -2rem !important;
+                    max-width: 380px !important;
+                    padding-left: 1rem !important;
+                    padding-right: 1rem !important;
+                }
                 .auth-card {
                     background: var(--secondary-background-color, #f0f2f6);
                     border-radius: 16px;
