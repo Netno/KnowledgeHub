@@ -349,11 +349,23 @@ if 'sidebar_init' not in st.session_state:
         (function() {
             if (window.parent.innerWidth > 768) return;
             function tryClose() {
-                var sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
-                if (sidebar) sidebar.setAttribute('aria-expanded', 'false');
+                var doc = window.parent.document;
+                var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
+                if (!sidebar) return;
+                sidebar.setAttribute('aria-expanded', 'false');
+                // Inject style to show expand control
+                if (!doc.getElementById('kh-sidebar-fix')) {
+                    var style = doc.createElement('style');
+                    style.id = 'kh-sidebar-fix';
+                    style.textContent = '[data-testid="stSidebarCollapsedControl"] { display: flex !important; }';
+                    doc.head.appendChild(style);
+                }
+                // Force show expand control
+                var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]');
+                if (ctrl) { ctrl.style.display = 'flex'; ctrl.style.visibility = 'visible'; }
             }
-            setTimeout(tryClose, 200);
-            setTimeout(tryClose, 500);
+            setTimeout(tryClose, 300);
+            setTimeout(tryClose, 700);
         })();
         </script>
         """,
@@ -417,13 +429,20 @@ if st.session_state.prev_page is not None and st.session_state.prev_page != page
             function tryClose() {
                 var doc = window.parent.document;
                 var sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-                if (sidebar) {
-                    sidebar.setAttribute('aria-expanded', 'false');
+                if (!sidebar) return;
+                sidebar.setAttribute('aria-expanded', 'false');
+                // Inject style to show expand control
+                if (!doc.getElementById('kh-sidebar-fix')) {
+                    var style = doc.createElement('style');
+                    style.id = 'kh-sidebar-fix';
+                    style.textContent = '[data-testid="stSidebarCollapsedControl"] { display: flex !important; }';
+                    doc.head.appendChild(style);
                 }
+                var ctrl = doc.querySelector('[data-testid="stSidebarCollapsedControl"]');
+                if (ctrl) { ctrl.style.display = 'flex'; ctrl.style.visibility = 'visible'; }
             }
             setTimeout(tryClose, 100);
-            setTimeout(tryClose, 300);
-            setTimeout(tryClose, 600);
+            setTimeout(tryClose, 400);
         })();
         </script>
         """,
