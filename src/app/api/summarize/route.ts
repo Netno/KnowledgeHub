@@ -5,7 +5,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, summaries, language, dateContext, totalCount } = await request.json();
+    const { query, summaries, language, dateContext, totalCount } =
+      await request.json();
 
     const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 
@@ -15,9 +16,9 @@ export async function POST(request: NextRequest) {
     const summaryList = summaries.map((s: string) => `- ${s}`).join("\n");
 
     const dateNote = dateContext
-      ? (isSv
+      ? isSv
         ? `\nOBS: Alla ${count} poster nedan är hämtade från perioden ${dateContext}. Svara direkt med antalet poster (${count} st).`
-        : `\nNOTE: All ${count} entries below are from the period ${dateContext}. State the entry count (${count}) directly.`)
+        : `\nNOTE: All ${count} entries below are from the period ${dateContext}. State the entry count (${count}) directly.`
       : "";
 
     const prompt = isSv

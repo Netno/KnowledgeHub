@@ -38,7 +38,7 @@ export default function AddPage() {
     return null;
   }, []);
 
-  // Handle paste — text goes into textarea, files get added
+  // Handle paste — text goes into textarea, files get added as attachments
   const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -50,7 +50,11 @@ export default function AddPage() {
       if (item.kind === "file") {
         const file = item.getAsFile();
         if (file) {
-          pastedFiles.push(file);
+          // Give pasted images a name if they don't have one
+          const namedFile = file.name === "image.png" || !file.name
+            ? new File([file], `paste-${Date.now()}.${file.type.split("/")[1] || "png"}`, { type: file.type })
+            : file;
+          pastedFiles.push(namedFile);
           hasFiles = true;
         }
       }
@@ -58,12 +62,12 @@ export default function AddPage() {
 
     if (hasFiles) {
       e.preventDefault();
-      // Try to read text content of pasted files
       for (const file of pastedFiles) {
         const text = await readFileAsText(file);
         if (text) {
           setContent((prev) => prev + (prev ? "\n\n" : "") + `[${file.name}]\n${text}`);
         } else {
+          // Binary file (image, PDF etc) → add as attachment
           addFiles([file]);
         }
       }
@@ -131,10 +135,16 @@ export default function AddPage() {
 
       let fullContent = content;
 
-      // Process text-based files
+      // Process attached files
       for (const file of files) {
-        const text = await file.text();
-        fullContent += `\n\n[${file.type || "FILE"}: ${file.name}]\n${text.slice(0, 5000)}`;
+        const isImage = file.type.startsWith("image/");
+        if (isImage) {
+          // For images, note them but don't try to read as text
+          fullContent += `\n\n[Bild: ${file.name}, ${(file.size / 1024).toFixed(0)} KB, ${file.type}]`;
+        } else {
+          const text = await file.text();
+          fullContent += `\n\n[${file.type || "FILE"}: ${file.name}]\n${text.slice(0, 5000)}`;
+        }
       }
 
       // AI Analysis
@@ -231,12 +241,31 @@ export default function AddPage() {
         {files.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {files.map((f, i) => (
-              <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded flex items-center gap-1">
-                {f.name}
-                <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
-                  <X size={12} />
-                </button>
-              </span>
+              <div key={i} className="relative group">
+                {f.type.startsWith("image/") ? (
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={URL.createObjectURL(f)}
+                      alt={f.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => removeFile(i)}
+                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded flex items-center gap-1">
+                    {f.name}
+                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         )}
