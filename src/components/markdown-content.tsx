@@ -112,7 +112,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`prose-sm max-w-none ${className || ""}`}>
+    <div className={`max-w-none [&>*]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_p]:my-0 [&_h1]:my-0 [&_h2]:my-0 [&_h3]:my-0 [&_blockquote]:my-0 ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
