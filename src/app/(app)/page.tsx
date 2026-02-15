@@ -475,7 +475,11 @@ export default function AddPage() {
             {sourceUrl}
           </a>
           <button
-            onClick={() => setSourceUrl(null)}
+            onClick={() => {
+              setSourceUrl(null);
+              setContent("");
+              setSourceImageUrl(null);
+            }}
             className="text-gray-400 hover:text-red-500"
           >
             <X size={12} />
