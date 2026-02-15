@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { RefreshCw, Loader2, Upload, CheckCircle, XCircle, FileSpreadsheet } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import * as XLSX from "xlsx";
+import { getLanguage } from "@/lib/use-language";
 
 type SheetData = { [sheetName: string]: string[][] };
 
@@ -57,7 +58,7 @@ export default function AdminPage() {
         const res = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: entry.content }),
+          body: JSON.stringify({ content: entry.content, language: getLanguage() }),
         });
         const analysis = await res.json();
 
@@ -194,7 +195,7 @@ export default function AdminPage() {
         const analyzeRes = await fetch("/api/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: fullContent }),
+          body: JSON.stringify({ content: fullContent, language: getLanguage() }),
         });
         const analysis = await analyzeRes.json();
 

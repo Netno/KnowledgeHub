@@ -12,8 +12,10 @@ import {
   LogOut,
   Menu,
   X,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/lib/use-language";
 
 interface NavProps {
   email: string;
@@ -27,9 +29,7 @@ const adminNavItems = [
   { href: "/admin", label: "Admin", icon: Settings },
 ];
 
-const userNavItems = [
-  { href: "/search", label: "Search", icon: Search },
-];
+const userNavItems = [{ href: "/search", label: "Search", icon: Search }];
 
 export default function Nav({ email, isAdmin }: NavProps) {
   const pathname = usePathname();
@@ -37,6 +37,7 @@ export default function Nav({ email, isAdmin }: NavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = isAdmin ? adminNavItems : userNavItems;
+  const { language, setLanguage } = useLanguage();
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -60,7 +61,9 @@ export default function Nav({ email, isAdmin }: NavProps) {
               <rect x="42" y="71" width="16" height="4" rx="2" fill="#9CA3AF" />
               <rect x="44" y="77" width="12" height="4" rx="2" fill="#9CA3AF" />
             </svg>
-            <span className="text-lg font-bold hidden sm:inline">KnowledgeHub</span>
+            <span className="text-lg font-bold hidden sm:inline">
+              KnowledgeHub
+            </span>
           </Link>
 
           {/* Desktop nav */}
@@ -84,8 +87,18 @@ export default function Nav({ email, isAdmin }: NavProps) {
             })}
           </nav>
 
-          {/* User + sign out (desktop) */}
+          {/* User + language + sign out (desktop) */}
           <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={() => setLanguage(language === "sv" ? "en" : "sv")}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded border border-gray-200 dark:border-gray-700"
+              title={
+                language === "sv" ? "Switch to English" : "Byt till svenska"
+              }
+            >
+              <Globe size={12} />
+              {language === "sv" ? "SV" : "EN"}
+            </button>
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {isAdmin ? "👑" : "👤"} {email}
             </span>
@@ -132,13 +145,22 @@ export default function Nav({ email, isAdmin }: NavProps) {
             </nav>
             <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between px-3">
               <span className="text-xs text-gray-500">{email}</span>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-1 text-xs text-red-500"
-              >
-                <LogOut size={14} />
-                Sign Out
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setLanguage(language === "sv" ? "en" : "sv")}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded border border-gray-200 dark:border-gray-700"
+                >
+                  <Globe size={12} />
+                  {language === "sv" ? "SV" : "EN"}
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1 text-xs text-red-500"
+                >
+                  <LogOut size={14} />
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import type { Entry } from "@/lib/types";
+import { getLanguage } from "@/lib/use-language";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -48,7 +49,7 @@ export default function SearchPage() {
         const sumRes = await fetch("/api/summarize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, summaries }),
+          body: JSON.stringify({ query, summaries, language: getLanguage() }),
         });
         const { summary } = await sumRes.json();
         setAiSummary(summary || "");

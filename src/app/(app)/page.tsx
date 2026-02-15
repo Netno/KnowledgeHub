@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Save, Paperclip, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import type { AiAnalysis } from "@/lib/types";
+import { getLanguage } from "@/lib/use-language";
 
 export default function AddPage() {
   const [content, setContent] = useState("");
@@ -42,6 +43,7 @@ export default function AddPage() {
         body: JSON.stringify({
           content: fullContent,
           fileInfo: files.length > 0 ? `${files.length} file(s)` : undefined,
+          language: getLanguage(),
         }),
       });
       const aiAnalysis: AiAnalysis = await analyzeRes.json();

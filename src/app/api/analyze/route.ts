@@ -5,9 +5,16 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
-    const { content, fileInfo } = await request.json();
+    const { content, fileInfo, language } = await request.json();
 
     const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+
+    const langInstruction =
+      language === "sv"
+        ? "Svara på svenska."
+        : language === "en"
+          ? "Respond in English."
+          : "Respond in the same language as the content.";
 
     const prompt = `Analyze the following content and extract structured information.
 Return a JSON object with these fields (include only what you can identify):
@@ -18,6 +25,8 @@ Return a JSON object with these fields (include only what you can identify):
 - sentiment: "positive", "negative", "neutral", or "mixed"
 - action_items: Array of any action items or tasks mentioned
 - key_points: Array of main takeaways
+
+${langInstruction}
 
 Content:
 ${content}
