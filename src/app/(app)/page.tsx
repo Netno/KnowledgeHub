@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, DragEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Save, Paperclip, Loader2, CheckCircle, AlertCircle, Upload, X } from "lucide-react";
+import { Save, Paperclip, Loader2, CheckCircle, AlertCircle, Upload, X, Eye, Pencil } from "lucide-react";
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 
@@ -14,6 +14,8 @@ export default function AddPage() {
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileStatus, setFileStatus] = useState<string>("");
+  const [showPreview, setShowPreview] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
 
@@ -71,6 +73,22 @@ export default function AddPage() {
     return null;
   }, []);
 
+  // Process files: extract content and append to textarea
+  const processFiles = useCallback(async (fileList: File[]) => {
+    setProcessing(true);
+    for (const file of fileList) {
+      const result = await extractFileContent(file);
+      if (result) {
+        const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
+        setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
+      } else {
+        addFiles([file]);
+      }
+    }
+    setProcessing(false);
+    if (fileList.length > 0) setShowPreview(true);
+  }, [extractFileContent, addFiles]);
+
   // Handle paste — text goes into textarea, files get added as attachments
   const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
@@ -95,18 +113,10 @@ export default function AddPage() {
 
     if (hasFiles) {
       e.preventDefault();
-      for (const file of pastedFiles) {
-        const result = await extractFileContent(file);
-        if (result) {
-          const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
-          setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
-        } else {
-          addFiles([file]);
-        }
-      }
+      await processFiles(pastedFiles);
     }
     // If no files, let default text paste happen
-  }, [addFiles, extractFileContent]);
+  }, [processFiles]);
 
   // Drag & drop
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -140,21 +150,12 @@ export default function AddPage() {
 
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length === 0) return;
-
-    for (const file of droppedFiles) {
-      const result = await extractFileContent(file);
-      if (result) {
-        const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
-        setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
-      } else {
-        addFiles([file]);
-      }
-    }
-  }, [addFiles, extractFileContent]);
+    await processFiles(droppedFiles);
+  }, [processFiles]);
 
   const handleSave = useCallback(async () => {
     if (!content.trim() && files.length === 0) {
-      setStatus({ type: "error", message: "Add some content or attach a file." });
+      setStatus({ type: "error", message: "Lägg till innehåll eller bifoga en fil." });
       return;
     }
 
@@ -167,18 +168,7 @@ export default function AddPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      let fullContent = content;
-
-      // Process any remaining attached files (ones that weren't already extracted into content)
-      for (const file of files) {
-        const result = await extractFileContent(file);
-        if (result) {
-          const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
-          fullContent += `\n\n${prefix}\n${result.text}`;
-        } else {
-          fullContent += `\n\n[Fil: ${file.name}, ${(file.size / 1024).toFixed(0)} KB]`;
-        }
-      }
+      const fullContent = content;
 
       // AI Analysis
       const analyzeRes = await fetch("/api/analyze", {
@@ -214,9 +204,11 @@ export default function AddPage() {
 
       if (error) throw error;
 
-      setStatus({ type: "success", message: "Saved!" });
+      setStatus({ type: "success", message: "Sparad!" });
       setContent("");
       setFiles([]);
+      setShowPreview(false);
+      setAnalysis(null);
     } catch (err) {
       setStatus({ type: "error", message: `Error: ${err}` });
     } finally {
@@ -267,7 +259,7 @@ export default function AddPage() {
             type="file"
             multiple
             accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.csv,.pdf,.txt,.xlsx,.xls,.docx,.doc,.json,.xml,.md,.log"
-            onChange={(e) => addFiles(Array.from(e.target.files || []))}
+            onChange={(e) => processFiles(Array.from(e.target.files || []))}
             className="hidden"
           />
         </label>
@@ -309,14 +301,52 @@ export default function AddPage() {
         )}
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-4 w-full flex items-center justify-center gap-2 bg-brand-400 hover:bg-brand-500 text-gray-900 font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
-      >
-        {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-        {saving ? "Saving..." : "Save"}
-      </button>
+      {/* Content preview (shown after file import or via button) */}
+      {content.trim() && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-500 transition-colors"
+          >
+            {showPreview ? <Pencil size={14} /> : <Eye size={14} />}
+            {showPreview ? "Redigera" : `Förhandsgranska (${content.length.toLocaleString()} tecken, ~${content.split(/\s+/).length} ord)`}
+          </button>
+
+          {showPreview && (
+            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 max-h-96 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500">
+                  {content.length.toLocaleString()} tecken &middot; ~{content.split(/\s+/).length} ord &middot; {content.split("\n").length} rader
+                </span>
+              </div>
+              <pre className="text-sm whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">
+                {content}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="mt-4 flex gap-2">
+        {content.trim() && !showPreview && (
+          <button
+            onClick={() => setShowPreview(true)}
+            className="flex-1 flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            <Eye size={18} />
+            Förhandsgranska
+          </button>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={saving || processing || (!content.trim() && files.length === 0)}
+          className="flex-1 flex items-center justify-center gap-2 bg-brand-400 hover:bg-brand-500 text-gray-900 font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          {saving ? "Sparar..." : "Spara"}
+        </button>
+      </div>
 
       {/* Status */}
       {status && (
