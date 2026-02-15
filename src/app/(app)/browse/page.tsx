@@ -419,7 +419,7 @@ export default function BrowsePage() {
                             className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
                           />
                         )}
-                        {entry.content}
+                        {entry.content.replace(/\n\n+/g, '\n')}
                       </div>
                     )}
                   </div>
