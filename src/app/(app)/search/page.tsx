@@ -2,14 +2,27 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Search as SearchIcon,
+  Loader2,
+  Lightbulb,
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
+import { useLanguage } from "@/lib/use-language";
 
 const PAGE_SIZE = 50;
 
 /** Parse date intent from natural language query */
-function detectDateFilter(query: string): { from: string | null; to: string | null; label: string | null } {
+function detectDateFilter(query: string): {
+  from: string | null;
+  to: string | null;
+  label: string | null;
+} {
   const q = query.toLowerCase();
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -28,17 +41,27 @@ function detectDateFilter(query: string): { from: string | null; to: string | nu
   }
 
   // "sedan igår" / "since yesterday" → yesterday + today
-  if (/\b(sedan igår|sedan i går|since yesterday|från igår|från i går)\b/.test(q)) {
-    return { from: yesterdayStr, to: today, label: `${yesterdayStr} → ${today}` };
+  if (
+    /\b(sedan igår|sedan i går|since yesterday|från igår|från i går)\b/.test(q)
+  ) {
+    return {
+      from: yesterdayStr,
+      to: today,
+      label: `${yesterdayStr} → ${today}`,
+    };
   }
 
   // "sedan i förrgår" / "since day before yesterday" (must be before "i förrgår")
-  if (/\b(sedan i förrgår|sedan förrgår|since day before yesterday)\b/.test(q)) {
+  if (
+    /\b(sedan i förrgår|sedan förrgår|since day before yesterday)\b/.test(q)
+  ) {
     return { from: daysAgo(2), to: today, label: `${daysAgo(2)} → ${today}` };
   }
 
   // "i förrgår" / "day before yesterday"
-  if (/\b(i förrgår|i förrgar|förrgår|förrgar|day before yesterday)\b/.test(q)) {
+  if (
+    /\b(i förrgår|i förrgar|förrgår|förrgar|day before yesterday)\b/.test(q)
+  ) {
     return { from: daysAgo(2), to: daysAgo(2), label: daysAgo(2) };
   }
 
@@ -53,22 +76,36 @@ function detectDateFilter(query: string): { from: string | null; to: string | nu
   }
 
   // "senaste X dagarna" / "last X days"
-  const daysMatch = q.match(/\b(?:senaste|sista|last)\s+(\d+)\s+(?:dagarna|dagar|days)\b/);
+  const daysMatch = q.match(
+    /\b(?:senaste|sista|last)\s+(\d+)\s+(?:dagarna|dagar|days)\b/,
+  );
   if (daysMatch) {
     const n = parseInt(daysMatch[1]);
     return { from: daysAgo(n), to: today, label: `${daysAgo(n)} → ${today}` };
   }
 
   // This week / last 7 days
-  if (/\b(denna vecka|den här veckan|this week|senaste veckan|sista veckan|last week)\b/.test(q)) {
+  if (
+    /\b(denna vecka|den här veckan|this week|senaste veckan|sista veckan|last week)\b/.test(
+      q,
+    )
+  ) {
     return { from: daysAgo(7), to: today, label: `${daysAgo(7)} → ${today}` };
   }
 
   // This month / last 30 days
-  if (/\b(denna månad|den här månaden|this month|senaste månaden|sista månaden|last month)\b/.test(q)) {
+  if (
+    /\b(denna månad|den här månaden|this month|senaste månaden|sista månaden|last month)\b/.test(
+      q,
+    )
+  ) {
     const monthAgo = new Date(now);
     monthAgo.setMonth(monthAgo.getMonth() - 1);
-    return { from: monthAgo.toISOString().slice(0, 10), to: today, label: `${monthAgo.toISOString().slice(0, 10)} → ${today}` };
+    return {
+      from: monthAgo.toISOString().slice(0, 10),
+      to: today,
+      label: `${monthAgo.toISOString().slice(0, 10)} → ${today}`,
+    };
   }
 
   // Specific date YYYY-MM-DD
@@ -81,6 +118,8 @@ function detectDateFilter(query: string): { from: string | null; to: string | nu
 }
 
 export default function SearchPage() {
+  const { language } = useLanguage();
+  const sv = language === "sv";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Entry[]>([]);
   const [aiSummary, setAiSummary] = useState("");
@@ -100,7 +139,9 @@ export default function SearchPage() {
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
     observer.observe(el);
     return () => observer.disconnect();
   }, [handleObserver, results]);
@@ -126,7 +167,9 @@ export default function SearchPage() {
         // Exclude embedding column to avoid huge response sizes
         let dbQuery = supabase
           .from("entries")
-          .select("id, content, ai_analysis, file_type, file_name, created_at, archived")
+          .select(
+            "id, content, ai_analysis, file_type, file_name, created_at, archived",
+          )
           .gte("created_at", `${dateFilter.from}T00:00:00`)
           .order("created_at", { ascending: false });
 
@@ -134,7 +177,10 @@ export default function SearchPage() {
           // Add one day to 'to' to include the full day
           const toDate = new Date(dateFilter.to);
           toDate.setDate(toDate.getDate() + 1);
-          dbQuery = dbQuery.lt("created_at", toDate.toISOString().slice(0, 10) + "T00:00:00");
+          dbQuery = dbQuery.lt(
+            "created_at",
+            toDate.toISOString().slice(0, 10) + "T00:00:00",
+          );
         }
 
         const { data, error } = await dbQuery;
@@ -170,19 +216,25 @@ export default function SearchPage() {
 
         if (totalCount > 20) {
           // Group by category and give counts + sample summaries
-          const categories: Record<string, { count: number; samples: string[] }> = {};
+          const categories: Record<
+            string,
+            { count: number; samples: string[] }
+          > = {};
           for (const r of filtered) {
             const cat = r.ai_analysis?.category || "Okategoriserat";
             if (!categories[cat]) categories[cat] = { count: 0, samples: [] };
             categories[cat].count++;
             if (categories[cat].samples.length < 2) {
-              categories[cat].samples.push(r.ai_analysis?.summary || r.content.slice(0, 80));
+              categories[cat].samples.push(
+                r.ai_analysis?.summary || r.content.slice(0, 80),
+              );
             }
           }
           summariesForAI = [
             `Totalt ${totalCount} poster.`,
-            ...Object.entries(categories).map(([cat, { count, samples }]) =>
-              `${cat}: ${count} st (t.ex. "${samples[0]}"${samples[1] ? `, "${samples[1]}"` : ""})`
+            ...Object.entries(categories).map(
+              ([cat, { count, samples }]) =>
+                `${cat}: ${count} st (t.ex. "${samples[0]}"${samples[1] ? `, "${samples[1]}"` : ""})`,
             ),
           ];
         } else {
@@ -209,8 +261,12 @@ export default function SearchPage() {
       } else {
         const lang = getLanguage();
         const noResults = dateFilter.label
-          ? (lang === "sv" ? `Inga poster hittades för ${dateFilter.label}.` : `No entries found for ${dateFilter.label}.`)
-          : (lang === "sv" ? "Inga matchande poster hittades." : "No matching entries found.");
+          ? lang === "sv"
+            ? `Inga poster hittades för ${dateFilter.label}.`
+            : `No entries found for ${dateFilter.label}.`
+          : lang === "sv"
+            ? "Inga matchande poster hittades."
+            : "No matching entries found.";
         setAiSummary(noResults);
       }
     } catch (err) {
@@ -222,9 +278,14 @@ export default function SearchPage() {
 
   const toggleArchive = async (id: string, currentlyArchived: boolean) => {
     const supabase = createClient();
-    await supabase.from("entries").update({ archived: !currentlyArchived }).eq("id", id);
+    await supabase
+      .from("entries")
+      .update({ archived: !currentlyArchived })
+      .eq("id", id);
     setResults((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, archived: !currentlyArchived } : r))
+      prev.map((r) =>
+        r.id === id ? { ...r, archived: !currentlyArchived } : r,
+      ),
     );
   };
 
@@ -237,7 +298,9 @@ export default function SearchPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Search Knowledge</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {sv ? "Sök kunskap" : "Search Knowledge"}
+      </h1>
 
       {/* Search input */}
       <div className="flex gap-2">
@@ -246,7 +309,7 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Ask anything..."
+          placeholder={sv ? "Fråga vad som helst..." : "Ask anything..."}
           className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
         />
         <button
@@ -254,7 +317,11 @@ export default function SearchPage() {
           disabled={searching}
           className="px-4 py-3 bg-brand-400 hover:bg-brand-500 text-gray-900 rounded-xl transition-colors disabled:opacity-50"
         >
-          {searching ? <Loader2 size={18} className="animate-spin" /> : <SearchIcon size={18} />}
+          {searching ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <SearchIcon size={18} />
+          )}
         </button>
       </div>
 
@@ -278,19 +345,32 @@ export default function SearchPage() {
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700">
             <div className="text-2xl font-bold">{results.length}</div>
-            <div className="text-xs text-gray-500">Resultat</div>
+            <div className="text-xs text-gray-500">
+              {sv ? "Resultat" : "Results"}
+            </div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700">
             <div className="text-2xl font-bold">
-              {new Set(results.flatMap((r) => r.ai_analysis?.entities || [])).size}
+              {
+                new Set(results.flatMap((r) => r.ai_analysis?.entities || []))
+                  .size
+              }
             </div>
-            <div className="text-xs text-gray-500">Entiteter</div>
+            <div className="text-xs text-gray-500">
+              {sv ? "Entiteter" : "Entities"}
+            </div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-700">
             <div className="text-2xl font-bold">
-              {new Set(results.map((r) => r.ai_analysis?.category).filter(Boolean)).size}
+              {
+                new Set(
+                  results.map((r) => r.ai_analysis?.category).filter(Boolean),
+                ).size
+              }
             </div>
-            <div className="text-xs text-gray-500">Kategorier</div>
+            <div className="text-xs text-gray-500">
+              {sv ? "Kategorier" : "Categories"}
+            </div>
           </div>
         </div>
       )}
@@ -320,7 +400,8 @@ export default function SearchPage() {
                     )}
                     {ai.sentiment && (
                       <span>
-                        {sentimentEmoji[ai.sentiment.toLowerCase()] || "💭"} {ai.sentiment}
+                        {sentimentEmoji[ai.sentiment.toLowerCase()] || "💭"}{" "}
+                        {ai.sentiment}
                       </span>
                     )}
                     <span>📅 {result.created_at.slice(0, 10)}</span>
@@ -332,8 +413,8 @@ export default function SearchPage() {
                       similarity >= 80
                         ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
                         : similarity >= 70
-                        ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
-                        : "text-gray-400"
+                          ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
+                          : "text-gray-400"
                     }`}
                   >
                     {similarity}%
@@ -345,7 +426,10 @@ export default function SearchPage() {
               {ai.topics && ai.topics.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {ai.topics.slice(0, 5).map((t, j) => (
-                    <span key={j} className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                    <span
+                      key={j}
+                      className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full"
+                    >
                       {t}
                     </span>
                   ))}
@@ -358,15 +442,37 @@ export default function SearchPage() {
                   onClick={() => setExpandedId(expanded ? null : result.id)}
                   className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
-                  {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  {expanded ? "Hide" : "Show content"}
+                  {expanded ? (
+                    <ChevronUp size={14} />
+                  ) : (
+                    <ChevronDown size={14} />
+                  )}
+                  {expanded
+                    ? sv
+                      ? "Dölj"
+                      : "Hide"
+                    : sv
+                      ? "Visa innehåll"
+                      : "Show content"}
                 </button>
                 <button
                   onClick={() => toggleArchive(result.id, !!result.archived)}
                   className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                  title={result.archived ? "Restore" : "Archive"}
+                  title={
+                    result.archived
+                      ? sv
+                        ? "Återställ"
+                        : "Restore"
+                      : sv
+                        ? "Arkivera"
+                        : "Archive"
+                  }
                 >
-                  {result.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                  {result.archived ? (
+                    <ArchiveRestore size={14} />
+                  ) : (
+                    <Archive size={14} />
+                  )}
                 </button>
               </div>
 
@@ -387,12 +493,20 @@ export default function SearchPage() {
           <Loader2 size={20} className="animate-spin text-gray-400" />
         </div>
       )}
-      {results.length > 0 && displayCount >= results.length && results.length > PAGE_SIZE && (
-        <p className="mt-4 text-xs text-gray-400 text-center">Alla {results.length} poster visas.</p>
-      )}
+      {results.length > 0 &&
+        displayCount >= results.length &&
+        results.length > PAGE_SIZE && (
+          <p className="mt-4 text-xs text-gray-400 text-center">
+            {sv
+              ? `Alla ${results.length} poster visas.`
+              : `All ${results.length} entries shown.`}
+          </p>
+        )}
 
       {!searching && query && results.length === 0 && (
-        <p className="mt-4 text-sm text-gray-500 text-center">Inga resultat hittades.</p>
+        <p className="mt-4 text-sm text-gray-500 text-center">
+          {sv ? "Inga resultat hittades." : "No results found."}
+        </p>
       )}
     </div>
   );

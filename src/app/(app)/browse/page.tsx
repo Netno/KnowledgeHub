@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
 import type { Entry } from "@/lib/types";
+import { useLanguage } from "@/lib/use-language";
 
 export default function BrowsePage() {
+  const { language } = useLanguage();
+  const sv = language === "sv";
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
@@ -14,7 +17,13 @@ export default function BrowsePage() {
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    let query = supabase.from("entries").select("id, content, ai_analysis, file_type, file_name, created_at, archived").order("created_at", { ascending: false }).limit(500);
+    let query = supabase
+      .from("entries")
+      .select(
+        "id, content, ai_analysis, file_type, file_name, created_at, archived",
+      )
+      .order("created_at", { ascending: false })
+      .limit(500);
 
     if (!showArchived) {
       query = query.eq("archived", false);
@@ -32,7 +41,9 @@ export default function BrowsePage() {
   const toggleArchive = async (id: string, archived: boolean) => {
     const supabase = createClient();
     await supabase.from("entries").update({ archived: !archived }).eq("id", id);
-    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, archived: !archived } : e)));
+    setEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, archived: !archived } : e)),
+    );
   };
 
   const deleteEntry = async (id: string) => {
@@ -44,20 +55,19 @@ export default function BrowsePage() {
 
   // Collect categories
   const categories = Array.from(
-    new Set(
-      entries
-        .map((e) => e.ai_analysis?.category)
-        .filter(Boolean)
-    )
+    new Set(entries.map((e) => e.ai_analysis?.category).filter(Boolean)),
   ).sort();
 
   const filtered = entries.filter(
-    (e) => filterCategory === "Alla" || e.ai_analysis?.category === filterCategory
+    (e) =>
+      filterCategory === "Alla" || e.ai_analysis?.category === filterCategory,
   );
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Browse All</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {sv ? "Bläddra" : "Browse All"}
+      </h1>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center mb-4">
@@ -85,7 +95,8 @@ export default function BrowsePage() {
         </select>
 
         <span className="text-sm text-gray-500">
-          {filtered.length} {filterCategory !== "Alla" ? `av ${entries.length}` : ""} poster
+          {filtered.length}{" "}
+          {filterCategory !== "Alla" ? `av ${entries.length}` : ""} poster
         </span>
       </div>
 
@@ -94,7 +105,9 @@ export default function BrowsePage() {
           <Loader2 size={24} className="animate-spin text-gray-400" />
         </div>
       ) : filtered.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-8">Inga poster hittades.</p>
+        <p className="text-sm text-gray-500 text-center py-8">
+          Inga poster hittades.
+        </p>
       ) : (
         <div className="space-y-3">
           {filtered.map((entry) => {
@@ -133,17 +146,27 @@ export default function BrowsePage() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-xs text-gray-400">{entry.created_at.slice(0, 10)}</span>
+                    <span className="text-xs text-gray-400">
+                      {entry.created_at.slice(0, 10)}
+                    </span>
                     {entry.file_type && (
-                      <span className="text-xs text-gray-400">📎 {entry.file_type}</span>
+                      <span className="text-xs text-gray-400">
+                        📎 {entry.file_type}
+                      </span>
                     )}
                     <div className="flex gap-1 mt-1">
                       <button
-                        onClick={() => toggleArchive(entry.id, !!entry.archived)}
+                        onClick={() =>
+                          toggleArchive(entry.id, !!entry.archived)
+                        }
                         className="p-1 text-gray-400 hover:text-brand-500 transition-colors"
                         title={entry.archived ? "Återställ" : "Arkivera"}
                       >
-                        {entry.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                        {entry.archived ? (
+                          <ArchiveRestore size={14} />
+                        ) : (
+                          <Archive size={14} />
+                        )}
                       </button>
                       <button
                         onClick={() => deleteEntry(entry.id)}

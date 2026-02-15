@@ -22,22 +22,42 @@ interface NavProps {
   isAdmin: boolean;
 }
 
-const adminNavItems = [
-  { href: "/", label: "Add", icon: PlusCircle },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/browse", label: "Browse", icon: FolderOpen },
-  { href: "/admin", label: "Admin", icon: Settings },
-];
+const labels = {
+  sv: {
+    add: "Lägg till",
+    search: "Sök",
+    browse: "Bläddra",
+    admin: "Admin",
+    signOut: "Logga ut",
+  },
+  en: {
+    add: "Add",
+    search: "Search",
+    browse: "Browse",
+    admin: "Admin",
+    signOut: "Sign Out",
+  },
+};
 
-const userNavItems = [{ href: "/search", label: "Search", icon: Search }];
+function getNavItems(lang: "sv" | "en", isAdmin: boolean) {
+  const t = labels[lang];
+  const items = [
+    { href: "/", label: t.add, icon: PlusCircle },
+    { href: "/search", label: t.search, icon: Search },
+    { href: "/browse", label: t.browse, icon: FolderOpen },
+  ];
+  if (isAdmin) items.push({ href: "/admin", label: t.admin, icon: Settings });
+  return items;
+}
 
 export default function Nav({ email, isAdmin }: NavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const navItems = isAdmin ? adminNavItems : userNavItems;
   const { language, setLanguage } = useLanguage();
+
+  const navItems = getNavItems(language as "sv" | "en", isAdmin);
+  const t = labels[(language as "sv" | "en") || "sv"];
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -107,7 +127,7 @@ export default function Nav({ email, isAdmin }: NavProps) {
               className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-500 hover:text-red-500 transition-colors rounded"
             >
               <LogOut size={14} />
-              Sign Out
+              {t.signOut}
             </button>
           </div>
 
@@ -158,7 +178,7 @@ export default function Nav({ email, isAdmin }: NavProps) {
                   className="flex items-center gap-1 text-xs text-red-500"
                 >
                   <LogOut size={14} />
-                  Sign Out
+                  {t.signOut}
                 </button>
               </div>
             </div>

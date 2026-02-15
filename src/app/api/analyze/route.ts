@@ -16,17 +16,23 @@ export async function POST(request: NextRequest) {
           ? "Respond in English."
           : "Respond in the same language as the content.";
 
+    const categoryExamples =
+      language === "sv"
+        ? '"Feedback", "Idé", "Buggrapport", "Mötesanteckningar", "Forskning", "Fråga", "Dokumentation", "Recept", "Anteckning", "Övrigt"'
+        : '"Feedback", "Idea", "Bug Report", "Meeting Notes", "Research", "Question", "Documentation", "Recipe", "Note", "Other"';
+
     const prompt = `Analyze the following content and extract structured information.
 Return a JSON object with these fields (include only what you can identify):
 - summary: Brief 1-2 sentence summary
 - topics: Array of main topics/themes
 - entities: Array of named entities (people, companies, products, etc.)
-- category: Best fitting category (e.g., "Feedback", "Idea", "Bug Report", "Meeting Notes", "Research", "Question", "Documentation", etc.)
+- category: Best fitting category (e.g., ${categoryExamples})
 - sentiment: "positive", "negative", "neutral", or "mixed"
 - action_items: Array of any action items or tasks mentioned
 - key_points: Array of main takeaways
 
 ${langInstruction}
+All field values including summary, topics, category, action_items, and key_points MUST be in ${language === "sv" ? "Swedish" : "English"}.
 
 Content:
 ${content}

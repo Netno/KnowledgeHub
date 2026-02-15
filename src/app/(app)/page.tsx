@@ -2,15 +2,31 @@
 
 import { useState, useCallback, useRef, DragEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Save, Paperclip, Loader2, CheckCircle, AlertCircle, Upload, X, Eye, Pencil } from "lucide-react";
+import {
+  Save,
+  Paperclip,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Upload,
+  X,
+  Eye,
+  Pencil,
+} from "lucide-react";
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
+import { useLanguage } from "@/lib/use-language";
 
 export default function AddPage() {
+  const { language } = useLanguage();
+  const sv = language === "sv";
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileStatus, setFileStatus] = useState<string>("");
@@ -28,95 +44,150 @@ export default function AddPage() {
   }, []);
 
   // Extract content from any supported file
-  const extractFileContent = useCallback(async (file: File): Promise<{ text: string; type: "text" | "image" | "document" } | null> => {
-    const name = file.name.toLowerCase();
-    const mime = file.type;
+  const extractFileContent = useCallback(
+    async (
+      file: File,
+    ): Promise<{
+      text: string;
+      type: "text" | "image" | "document";
+    } | null> => {
+      const name = file.name.toLowerCase();
+      const mime = file.type;
 
-    // Plain text files — read directly
-    const textTypes = ["text/", "application/json", "application/xml", "application/csv"];
-    const textExtensions = [".txt", ".csv", ".json", ".xml", ".md", ".log", ".html", ".css", ".js", ".ts", ".py"];
-    const isText = textTypes.some((t) => mime.startsWith(t)) ||
-      textExtensions.some((ext) => name.endsWith(ext));
+      // Plain text files — read directly
+      const textTypes = [
+        "text/",
+        "application/json",
+        "application/xml",
+        "application/csv",
+      ];
+      const textExtensions = [
+        ".txt",
+        ".csv",
+        ".json",
+        ".xml",
+        ".md",
+        ".log",
+        ".html",
+        ".css",
+        ".js",
+        ".ts",
+        ".py",
+      ];
+      const isText =
+        textTypes.some((t) => mime.startsWith(t)) ||
+        textExtensions.some((ext) => name.endsWith(ext));
 
-    if (isText) {
-      const text = await file.text();
-      return { text, type: "text" };
-    }
+      if (isText) {
+        const text = await file.text();
+        return { text, type: "text" };
+      }
 
-    // Images — send to Gemini Vision API
-    if (mime.startsWith("image/")) {
-      setFileStatus(`🔍 Analyserar bild: ${file.name}...`);
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("language", getLanguage());
-      const res = await fetch("/api/describe-image", { method: "POST", body: formData });
-      const { description } = await res.json();
-      setFileStatus("");
-      if (description) return { text: description, type: "image" };
+      // Images — send to Gemini Vision API
+      if (mime.startsWith("image/")) {
+        setFileStatus(`🔍 Analyserar bild: ${file.name}...`);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("language", getLanguage());
+        const res = await fetch("/api/describe-image", {
+          method: "POST",
+          body: formData,
+        });
+        const { description } = await res.json();
+        setFileStatus("");
+        if (description) return { text: description, type: "image" };
+        return null;
+      }
+
+      // PDF, DOCX, XLSX — send to extract-text API
+      if (
+        name.endsWith(".pdf") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".doc") ||
+        name.endsWith(".xlsx") ||
+        name.endsWith(".xls")
+      ) {
+        const label = name.endsWith(".pdf")
+          ? "PDF"
+          : name.endsWith(".xlsx") || name.endsWith(".xls")
+            ? "Excel"
+            : "Word";
+        setFileStatus(`📄 Läser ${label}: ${file.name}...`);
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/extract-text", {
+          method: "POST",
+          body: formData,
+        });
+        const { text } = await res.json();
+        setFileStatus("");
+        if (text) return { text, type: "document" };
+        return null;
+      }
+
       return null;
-    }
-
-    // PDF, DOCX, XLSX — send to extract-text API
-    if (name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".doc") ||
-        name.endsWith(".xlsx") || name.endsWith(".xls")) {
-      const label = name.endsWith(".pdf") ? "PDF" : name.endsWith(".xlsx") || name.endsWith(".xls") ? "Excel" : "Word";
-      setFileStatus(`📄 Läser ${label}: ${file.name}...`);
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-      const { text } = await res.json();
-      setFileStatus("");
-      if (text) return { text, type: "document" };
-      return null;
-    }
-
-    return null;
-  }, []);
+    },
+    [],
+  );
 
   // Process files: extract content and append to textarea
-  const processFiles = useCallback(async (fileList: File[]) => {
-    setProcessing(true);
-    for (const file of fileList) {
-      const result = await extractFileContent(file);
-      if (result) {
-        const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
-        setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
-      } else {
-        addFiles([file]);
-      }
-    }
-    setProcessing(false);
-    if (fileList.length > 0) setShowPreview(true);
-  }, [extractFileContent, addFiles]);
-
-  // Handle paste — text goes into textarea, files get added as attachments
-  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    const pastedFiles: File[] = [];
-    let hasFiles = false;
-
-    for (const item of Array.from(items)) {
-      if (item.kind === "file") {
-        const file = item.getAsFile();
-        if (file) {
-          // Give pasted images a name if they don't have one
-          const namedFile = file.name === "image.png" || !file.name
-            ? new File([file], `paste-${Date.now()}.${file.type.split("/")[1] || "png"}`, { type: file.type })
-            : file;
-          pastedFiles.push(namedFile);
-          hasFiles = true;
+  const processFiles = useCallback(
+    async (fileList: File[]) => {
+      setProcessing(true);
+      for (const file of fileList) {
+        const result = await extractFileContent(file);
+        if (result) {
+          const prefix =
+            result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
+          setContent(
+            (prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`,
+          );
+        } else {
+          addFiles([file]);
         }
       }
-    }
+      setProcessing(false);
+      if (fileList.length > 0) setShowPreview(true);
+    },
+    [extractFileContent, addFiles],
+  );
 
-    if (hasFiles) {
-      e.preventDefault();
-      await processFiles(pastedFiles);
-    }
-    // If no files, let default text paste happen
-  }, [processFiles]);
+  // Handle paste — text goes into textarea, files get added as attachments
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const pastedFiles: File[] = [];
+      let hasFiles = false;
+
+      for (const item of Array.from(items)) {
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) {
+            // Give pasted images a name if they don't have one
+            const namedFile =
+              file.name === "image.png" || !file.name
+                ? new File(
+                    [file],
+                    `paste-${Date.now()}.${file.type.split("/")[1] || "png"}`,
+                    { type: file.type },
+                  )
+                : file;
+            pastedFiles.push(namedFile);
+            hasFiles = true;
+          }
+        }
+      }
+
+      if (hasFiles) {
+        e.preventDefault();
+        await processFiles(pastedFiles);
+      }
+      // If no files, let default text paste happen
+    },
+    [processFiles],
+  );
 
   // Drag & drop
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -142,20 +213,26 @@ export default function AddPage() {
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(async (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
-    dragCounter.current = 0;
+  const handleDrop = useCallback(
+    async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragging(false);
+      dragCounter.current = 0;
 
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length === 0) return;
-    await processFiles(droppedFiles);
-  }, [processFiles]);
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      if (droppedFiles.length === 0) return;
+      await processFiles(droppedFiles);
+    },
+    [processFiles],
+  );
 
   const handleSave = useCallback(async () => {
     if (!content.trim() && files.length === 0) {
-      setStatus({ type: "error", message: "Lägg till innehåll eller bifoga en fil." });
+      setStatus({
+        type: "error",
+        message: "Lägg till innehåll eller bifoga en fil.",
+      });
       return;
     }
 
@@ -165,7 +242,9 @@ export default function AddPage() {
 
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       const fullContent = content;
@@ -218,7 +297,9 @@ export default function AddPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Add Knowledge</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {sv ? "Lägg till kunskap" : "Add Knowledge"}
+      </h1>
 
       {/* Drop zone + textarea */}
       <div
@@ -245,7 +326,11 @@ export default function AddPage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onPaste={handlePaste}
-          placeholder="Skriv, klistra in text/filer, eller dra & släpp filer här..."
+          placeholder={
+            sv
+              ? "Skriv, klistra in text/filer, eller dra & släpp filer här..."
+              : "Type, paste text/files, or drag & drop files here..."
+          }
           className="w-full h-32 px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
         />
       </div>
@@ -254,7 +339,7 @@ export default function AddPage() {
       <div className="mt-3">
         <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-brand-500 transition-colors">
           <Paperclip size={16} />
-          <span>Bifoga filer</span>
+          <span>{sv ? "Bifoga filer" : "Attach files"}</span>
           <input
             type="file"
             multiple
@@ -285,7 +370,10 @@ export default function AddPage() {
                 ) : (
                   <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded flex items-center gap-1">
                     {f.name}
-                    <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
+                    <button
+                      onClick={() => removeFile(i)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
                       <X size={12} />
                     </button>
                   </span>
@@ -309,20 +397,30 @@ export default function AddPage() {
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-500 transition-colors"
           >
             {showPreview ? <Pencil size={14} /> : <Eye size={14} />}
-            {showPreview ? "Redigera" : `Förhandsgranska (${content.length.toLocaleString()} tecken, ~${content.split(/\s+/).length} ord)`}
+            {showPreview
+              ? sv
+                ? "Redigera"
+                : "Edit"
+              : `${sv ? "Förhandsgranska" : "Preview"} (${content.length.toLocaleString()} ${sv ? "tecken" : "chars"}, ~${content.split(/\s+/).length} ${sv ? "ord" : "words"})`}
           </button>
 
           {showPreview && (
             <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 max-h-96 overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-500">
-                  {content.length.toLocaleString()} tecken &middot; ~{content.split(/\s+/).length} ord &middot; {content.split("\n").length} rader
+                  {content.length.toLocaleString()} {sv ? "tecken" : "chars"}{" "}
+                  &middot; ~{content.split(/\s+/).length} {sv ? "ord" : "words"}{" "}
+                  &middot; {content.split("\n").length} {sv ? "rader" : "lines"}
                 </span>
                 <button
-                  onClick={() => { setContent(""); setFiles([]); setShowPreview(false); }}
+                  onClick={() => {
+                    setContent("");
+                    setFiles([]);
+                    setShowPreview(false);
+                  }}
                   className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
                 >
-                  <X size={12} /> Rensa allt
+                  <X size={12} /> {sv ? "Rensa allt" : "Clear all"}
                 </button>
               </div>
               <pre className="text-sm whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">
@@ -341,16 +439,22 @@ export default function AddPage() {
             className="flex-1 flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             <Eye size={18} />
-            Förhandsgranska
+            {sv ? "Förhandsgranska" : "Preview"}
           </button>
         )}
         <button
           onClick={handleSave}
-          disabled={saving || processing || (!content.trim() && files.length === 0)}
+          disabled={
+            saving || processing || (!content.trim() && files.length === 0)
+          }
           className="flex-1 flex items-center justify-center gap-2 bg-brand-400 hover:bg-brand-500 text-gray-900 font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
         >
-          {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-          {saving ? "Sparar..." : "Spara"}
+          {saving ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Save size={18} />
+          )}
+          {saving ? (sv ? "Sparar..." : "Saving...") : sv ? "Spara" : "Save"}
         </button>
       </div>
 
@@ -363,7 +467,11 @@ export default function AddPage() {
               : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"
           }`}
         >
-          {status.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+          {status.type === "success" ? (
+            <CheckCircle size={16} />
+          ) : (
+            <AlertCircle size={16} />
+          )}
           {status.message}
         </div>
       )}
@@ -371,26 +479,53 @@ export default function AddPage() {
       {/* AI Analysis */}
       {analysis && !analysis.error && (
         <div className="mt-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="font-semibold text-sm mb-3">AI Analysis</h3>
+          <h3 className="font-semibold text-sm mb-3">
+            {sv ? "AI-analys" : "AI Analysis"}
+          </h3>
           <div className="space-y-2 text-sm">
             {analysis.summary && (
-              <p><span className="font-medium">Summary:</span> {analysis.summary}</p>
+              <p>
+                <span className="font-medium">
+                  {sv ? "Sammanfattning:" : "Summary:"}
+                </span>{" "}
+                {analysis.summary}
+              </p>
             )}
             {analysis.category && (
-              <p><span className="font-medium">Category:</span> {analysis.category}</p>
+              <p>
+                <span className="font-medium">
+                  {sv ? "Kategori:" : "Category:"}
+                </span>{" "}
+                {analysis.category}
+              </p>
             )}
             {analysis.topics && analysis.topics.length > 0 && (
-              <p><span className="font-medium">Topics:</span> {analysis.topics.join(", ")}</p>
+              <p>
+                <span className="font-medium">{sv ? "Ämnen:" : "Topics:"}</span>{" "}
+                {analysis.topics.join(", ")}
+              </p>
             )}
             {analysis.entities && analysis.entities.length > 0 && (
-              <p><span className="font-medium">Entities:</span> {analysis.entities.join(", ")}</p>
+              <p>
+                <span className="font-medium">
+                  {sv ? "Entiteter:" : "Entities:"}
+                </span>{" "}
+                {analysis.entities.join(", ")}
+              </p>
             )}
             {analysis.sentiment && (
-              <p><span className="font-medium">Sentiment:</span> {analysis.sentiment}</p>
+              <p>
+                <span className="font-medium">
+                  {sv ? "Sentiment:" : "Sentiment:"}
+                </span>{" "}
+                {analysis.sentiment}
+              </p>
             )}
             {analysis.action_items && analysis.action_items.length > 0 && (
               <div>
-                <span className="font-medium">Action Items:</span>
+                <span className="font-medium">
+                  {sv ? "Åtgärder:" : "Action Items:"}
+                </span>
                 <ul className="list-disc list-inside mt-1">
                   {analysis.action_items.map((item, i) => (
                     <li key={i}>{item}</li>
