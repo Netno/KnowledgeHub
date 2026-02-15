@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, DragEvent } from "react";
+import { useState, useCallback, useRef, useEffect, DragEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Save,
@@ -41,6 +41,15 @@ export default function AddPage() {
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
+
+  // Auto-resize textarea when content changes programmatically
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.max(256, el.scrollHeight) + 'px';
+    }
+  }, [content]);
 
   // URL detection regex
   const urlRegex = /https?:\/\/[^\s]+/;
@@ -392,14 +401,18 @@ export default function AddPage() {
         <textarea
           ref={textareaRef}
           value={content}
-          onChange={(e) => handleContentChange(e.target.value)}
+          onChange={(e) => {
+            handleContentChange(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.max(256, e.target.scrollHeight) + 'px';
+          }}
           onPaste={handlePaste}
           placeholder={
             sv
               ? "Skriv, klistra in text/filer, eller dra & släpp filer här..."
               : "Type, paste text/files, or drag & drop files here..."
           }
-          className="w-full h-32 px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
+          className="w-full min-h-[16rem] max-h-[70vh] px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
         />
       </div>
 
@@ -527,7 +540,7 @@ export default function AddPage() {
           </button>
 
           {showPreview && (
-            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 max-h-96 overflow-y-auto">
+            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 max-h-[70vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-gray-500">
                   {content.length.toLocaleString()} {sv ? "tecken" : "chars"}{" "}
