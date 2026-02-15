@@ -18,6 +18,7 @@ import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
 import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
+import MarkdownContent from "@/components/markdown-content";
 
 const PAGE_SIZE = 50;
 
@@ -227,7 +228,7 @@ export default function SearchPage() {
         let dbQuery = supabase
           .from("entries")
           .select(
-            "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived",
+            "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived, image_url",
           )
           .gte("created_at", `${dateFilter.from}T00:00:00`)
           .order("created_at", { ascending: false });
@@ -609,10 +610,15 @@ export default function SearchPage() {
                         value={editContent}
                         onChange={(e) => {
                           setEditContent(e.target.value);
-                          e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
+                          e.target.style.height = "auto";
+                          e.target.style.height = e.target.scrollHeight + "px";
                         }}
-                        ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                        ref={(el) => {
+                          if (el) {
+                            el.style.height = "auto";
+                            el.style.height = el.scrollHeight + "px";
+                          }
+                        }}
                         className="w-full min-h-[12rem] max-h-[70vh] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
                       />
                       <div className="flex gap-2">
@@ -644,8 +650,16 @@ export default function SearchPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm whitespace-pre-wrap break-words">
-                      {result.content}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words">
+                      {result.image_url && (
+                        <img
+                          src={result.image_url}
+                          alt=""
+                          className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
+                          loading="lazy"
+                        />
+                      )}
+                      <MarkdownContent content={result.content} />
                     </div>
                   )}
                 </div>

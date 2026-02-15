@@ -71,6 +71,18 @@ export async function POST(request: NextRequest) {
       $('meta[name="description"]').attr("content") ||
       "";
 
+    // Extract image
+    let imageUrl =
+      $('meta[property="og:image"]').attr("content") ||
+      $('meta[property="og:image:url"]').attr("content") ||
+      $('meta[name="twitter:image"]').attr("content") ||
+      "";
+
+    // Make relative image URLs absolute
+    if (imageUrl && !imageUrl.startsWith("http")) {
+      imageUrl = new URL(imageUrl, parsedUrl.origin).href;
+    }
+
     // Remove unwanted elements
     $(
       "script:not([type='application/ld+json']), style, nav, footer, header, iframe, noscript, svg, " +
@@ -196,11 +208,28 @@ Important: Only output the actual content, no explanations or meta-commentary. W
       text = text.slice(0, 50000) + "\n\n[Content truncated]";
     }
 
+    // Also try to find a main image in content if no og:image
+    if (!imageUrl) {
+      const contentImg = mainContent.find("img[src]").first();
+      const imgSrc = contentImg.attr("src") || "";
+      if (
+        imgSrc &&
+        !imgSrc.includes("logo") &&
+        !imgSrc.includes("icon") &&
+        !imgSrc.includes("avatar")
+      ) {
+        imageUrl = imgSrc.startsWith("http")
+          ? imgSrc
+          : new URL(imgSrc, parsedUrl.origin).href;
+      }
+    }
+
     return NextResponse.json({
       title,
       description,
       text,
       url: parsedUrl.href,
+      imageUrl: imageUrl || null,
     });
   } catch (error) {
     console.error("URL extraction error:", error);

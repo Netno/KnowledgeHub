@@ -35,6 +35,7 @@ export default function AddPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
   const [urlLoading, setUrlLoading] = useState(false);
   const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,11 +79,12 @@ export default function AddPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch URL");
 
-        const { title, text } = data;
+        const { title, text, imageUrl } = data;
         const header = title ? `[${title}]` : `[${url}]`;
         const body = `${header}\nKälla: ${url}\n\n${text}`;
         setContent(body);
         setSourceUrl(url);
+        if (imageUrl) setSourceImageUrl(imageUrl);
         setShowPreview(true);
       } catch (err) {
         setStatus({
@@ -339,6 +341,7 @@ export default function AddPage() {
         ai_analysis: aiAnalysis,
         file_type: sourceUrl ? "url" : files.length > 0 ? files[0].type : null,
         file_name: sourceUrl || (files.length > 0 ? files[0].name : null),
+        image_url: sourceImageUrl || null,
         embedding,
         created_at: new Date().toISOString(),
       });
@@ -351,6 +354,7 @@ export default function AddPage() {
       setShowPreview(false);
       setAnalysis(null);
       setSourceUrl(null);
+      setSourceImageUrl(null);
     } catch (err) {
       setStatus({ type: "error", message: `Error: ${err}` });
     } finally {

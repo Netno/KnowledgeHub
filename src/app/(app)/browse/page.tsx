@@ -17,6 +17,7 @@ import type { Entry } from "@/lib/types";
 import { useLanguage } from "@/lib/use-language";
 import { getLanguage } from "@/lib/use-language";
 import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
+import MarkdownContent from "@/components/markdown-content";
 
 export default function BrowsePage() {
   const { language } = useLanguage();
@@ -85,7 +86,7 @@ export default function BrowsePage() {
     let query = supabase
       .from("entries")
       .select(
-        "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived",
+        "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived, image_url",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -350,10 +351,16 @@ export default function BrowsePage() {
                           value={editContent}
                           onChange={(e) => {
                             setEditContent(e.target.value);
-                            e.target.style.height = 'auto';
-                            e.target.style.height = e.target.scrollHeight + 'px';
+                            e.target.style.height = "auto";
+                            e.target.style.height =
+                              e.target.scrollHeight + "px";
                           }}
-                          ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = "auto";
+                              el.style.height = el.scrollHeight + "px";
+                            }
+                          }}
                           className="w-full min-h-[12rem] max-h-[70vh] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
                         />
                         <div className="flex gap-2">
@@ -385,8 +392,16 @@ export default function BrowsePage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm whitespace-pre-wrap break-words">
-                        {entry.content}
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words">
+                        {entry.image_url && (
+                          <img
+                            src={entry.image_url}
+                            alt=""
+                            className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
+                            loading="lazy"
+                          />
+                        )}
+                        <MarkdownContent content={entry.content} />
                       </div>
                     )}
                   </div>

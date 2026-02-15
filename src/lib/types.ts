@@ -22,4 +22,5 @@ export interface Entry {
   archived?: boolean;
   embedding?: number[] | null;
   similarity?: number;
+  image_url?: string | null;
 }
