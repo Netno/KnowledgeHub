@@ -514,10 +514,10 @@ export default function SearchPage() {
                         {ai.sentiment}
                       </span>
                     )}
-                    <span>📅 {result.created_at.slice(0, 10)}</span>
+                    <span>📅 {new Date(result.created_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
                     {result.updated_at && (
                       <span title={sv ? "Redigerad" : "Edited"}>
-                        ✏️ {result.updated_at.slice(0, 10)}
+                        ✏️ {new Date(result.updated_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                       </span>
                     )}
                     {result.file_type === "url" && result.file_name && (
