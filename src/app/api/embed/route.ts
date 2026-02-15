@@ -5,10 +5,13 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = await request.json();
+    const { text, taskType } = await request.json();
 
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-    const result = await model.embedContent(text.slice(0, 5000));
+    const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
+    const result = await model.embedContent({
+      content: { parts: [{ text: text.slice(0, 5000) }], role: "user" },
+      taskType: taskType || "RETRIEVAL_DOCUMENT",
+    });
 
     return NextResponse.json({ embedding: result.embedding.values });
   } catch (error) {

@@ -23,7 +23,7 @@ export default function SearchPage() {
       const embedRes = await fetch("/api/embed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: query }),
+        body: JSON.stringify({ text: query, taskType: "RETRIEVAL_QUERY" }),
       });
       const { embedding } = await embedRes.json();
       if (!embedding) throw new Error("Failed to generate embedding");
