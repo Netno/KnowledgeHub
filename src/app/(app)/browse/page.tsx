@@ -381,7 +381,7 @@ export default function BrowsePage() {
                               el.style.height = el.scrollHeight + "px";
                             }
                           }}
-                          className="w-full min-h-[12rem] max-h-[70vh] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700 leading-tight"
+                          className="w-full min-h-[12rem] max-h-[70vh] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700 font-mono leading-tight"
                         />
                         <div className="flex gap-2">
                           <button
@@ -412,7 +412,7 @@ export default function BrowsePage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full min-h-[12rem] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm border border-gray-200 dark:border-gray-700 whitespace-pre-wrap leading-tight">
+                      <div className="w-full min-h-[12rem] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm border border-gray-200 dark:border-gray-700 whitespace-pre-wrap font-mono leading-tight">
                         {entry.image_url && (
                           <ImageLightbox
                             src={entry.image_url}
