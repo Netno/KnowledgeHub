@@ -412,14 +412,19 @@ export default function BrowsePage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="w-full min-h-[12rem] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm border border-gray-200 dark:border-gray-700 font-mono leading-tight">
+                      <div>
                         {entry.image_url && (
                           <ImageLightbox
                             src={entry.image_url}
                             className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
                           />
                         )}
-                        {entry.content.replace(/\n\s*\n/g, '\n')}
+                        <textarea
+                          value={entry.content}
+                          readOnly
+                          className="w-full min-h-[12rem] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm border border-gray-200 dark:border-gray-700 font-mono leading-tight resize-none cursor-default"
+                          rows={entry.content.split('\n').length}
+                        />
                       </div>
                     )}
                   </div>
