@@ -412,7 +412,7 @@ export default function BrowsePage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words whitespace-pre-wrap">
+                      <div className="w-full min-h-[12rem] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm border border-gray-200 dark:border-gray-700 whitespace-pre-wrap font-sans leading-normal">
                         {entry.image_url && (
                           <ImageLightbox
                             src={entry.image_url}
