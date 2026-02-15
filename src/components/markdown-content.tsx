@@ -2,6 +2,7 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import type { Components } from "react-markdown";
 
 const components: Components = {
@@ -93,10 +94,7 @@ function preprocessContent(text: string): string {
   // Convert lines starting with a number (e.g. "1 text", "2) text", "3: text")
   // to proper markdown ordered list items ("1. text")
   // But skip lines already in "1. " format
-  result = result.replace(
-    /^(\d+)[):\s]\s*/gm,
-    (match, num) => `${num}. `,
-  );
+  result = result.replace(/^(\d+)[):\s]\s*/gm, (match, num) => `${num}. `);
 
   // Convert bullet-style lines: "• text" or "- text" without space issues
   result = result.replace(/^[•●]\s*/gm, "- ");
@@ -115,7 +113,10 @@ export default function MarkdownContent({
 
   return (
     <div className={`prose-sm max-w-none ${className || ""}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={components}
+      >
         {processed}
       </ReactMarkdown>
     </div>
