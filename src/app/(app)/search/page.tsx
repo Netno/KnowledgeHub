@@ -13,6 +13,7 @@ import {
   Pencil,
   Save,
   X,
+  Trash2,
 } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
@@ -349,6 +350,13 @@ export default function SearchPage() {
     );
   };
 
+  const deleteEntry = async (id: string) => {
+    if (!confirm(sv ? "Ta bort permanent?" : "Delete permanently?")) return;
+    const supabase = createClient();
+    await supabase.from("entries").delete().eq("id", id);
+    setResults((prev) => prev.filter((r) => r.id !== id));
+  };
+
   const startEdit = (entry: Entry) => {
     setEditingId(entry.id);
     setEditContent(entry.content);
@@ -598,6 +606,13 @@ export default function SearchPage() {
                   ) : (
                     <Archive size={14} />
                   )}
+                </button>
+                <button
+                  onClick={() => deleteEntry(result.id)}
+                  className="text-xs text-gray-500 hover:text-red-500 transition-colors"
+                  title={sv ? "Ta bort" : "Delete"}
+                >
+                  <Trash2 size={14} />
                 </button>
               </div>
 
