@@ -27,10 +27,10 @@ const components: Components = {
     </a>
   ),
   ul: ({ children }) => (
-    <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>
+    <ul className="list-disc list-inside mb-2 mt-0 space-y-0.5">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>
+    <ol className="list-decimal list-inside mb-2 mt-0 space-y-0.5">{children}</ol>
   ),
   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
   strong: ({ children }) => (
@@ -112,7 +112,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`prose-sm max-w-none [&>p+ul]:!-mt-2 [&>p+ol]:!-mt-2 ${className || ""}`}>
+    <div className={`prose-sm max-w-none ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
