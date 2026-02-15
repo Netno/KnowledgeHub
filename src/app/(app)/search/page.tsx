@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
+
+const PAGE_SIZE = 50;
 
 /** Parse date intent from natural language query */
 function detectDateFilter(query: string): { from: string | null; to: string | null; label: string | null } {
@@ -85,6 +87,23 @@ export default function SearchPage() {
   const [searching, setSearching] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dateLabel, setDateLabel] = useState<string | null>(null);
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Infinite scroll: load more when sentinel enters viewport
+  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+    if (entries[0].isIntersecting) {
+      setDisplayCount((prev) => prev + PAGE_SIZE);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(handleObserver, { threshold: 0.1 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleObserver, results]);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -92,6 +111,7 @@ export default function SearchPage() {
     setResults([]);
     setAiSummary("");
     setDateLabel(null);
+    setDisplayCount(PAGE_SIZE);
 
     try {
       // Detect date intent from query
@@ -271,7 +291,7 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="mt-4 space-y-3">
-        {results.map((result, i) => {
+        {results.slice(0, displayCount).map((result, i) => {
           const ai = result.ai_analysis || {};
           const similarity = Math.round((result.similarity || 0) * 100);
           const expanded = expandedId === result.id;
@@ -354,6 +374,16 @@ export default function SearchPage() {
           );
         })}
       </div>
+
+      {/* Infinite scroll sentinel + status */}
+      {results.length > 0 && displayCount < results.length && (
+        <div ref={sentinelRef} className="mt-4 flex justify-center">
+          <Loader2 size={20} className="animate-spin text-gray-400" />
+        </div>
+      )}
+      {results.length > 0 && displayCount >= results.length && results.length > PAGE_SIZE && (
+        <p className="mt-4 text-xs text-gray-400 text-center">Alla {results.length} poster visas.</p>
+      )}
 
       {!searching && query && results.length === 0 && (
         <p className="mt-4 text-sm text-gray-500 text-center">Inga resultat hittades.</p>
