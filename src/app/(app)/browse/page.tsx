@@ -412,14 +412,14 @@ export default function BrowsePage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words whitespace-pre-wrap">
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words">
                         {entry.image_url && (
                           <ImageLightbox
                             src={entry.image_url}
                             className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
                           />
                         )}
-                        {entry.content}
+                        <MarkdownContent content={entry.content} />
                       </div>
                     )}
                   </div>
