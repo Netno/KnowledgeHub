@@ -418,9 +418,19 @@ export default function AddPage() {
             src={sourceImageUrl}
             className="h-16 w-16 object-cover rounded-lg"
           />
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 flex-1">
             {sv ? "Bild sparas med posten" : "Image will be saved with entry"}
           </span>
+          <button
+            onClick={() => {
+              setSourceImageUrl(null);
+              setContent("");
+              setSourceUrl(null);
+            }}
+            className="text-gray-400 hover:text-red-500"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
