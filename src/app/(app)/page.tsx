@@ -18,6 +18,7 @@ import {
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
+import MarkdownContent from "@/components/markdown-content";
 
 export default function AddPage() {
   const { language } = useLanguage();
@@ -539,15 +540,23 @@ export default function AddPage() {
                     setFiles([]);
                     setShowPreview(false);
                     setSourceUrl(null);
+                    setSourceImageUrl(null);
                   }}
                   className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
                 >
                   <X size={12} /> {sv ? "Rensa allt" : "Clear all"}
                 </button>
               </div>
-              <pre className="text-sm whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">
-                {content}
-              </pre>
+              {sourceImageUrl && (
+                <img
+                  src={sourceImageUrl}
+                  alt=""
+                  className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
+                />
+              )}
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                <MarkdownContent content={content} />
+              </div>
             </div>
           )}
         </div>
