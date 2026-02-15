@@ -262,14 +262,29 @@ export default function BrowsePage() {
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="text-xs text-gray-400">
-                      {new Date(entry.created_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                      {new Date(entry.created_at).toLocaleString("sv-SE", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
                     </span>
                     {entry.updated_at && (
                       <span
                         className="text-xs text-gray-400"
                         title={sv ? "Redigerad" : "Edited"}
                       >
-                        ✏️ {new Date(entry.updated_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        ✏️{" "}
+                        {new Date(entry.updated_at).toLocaleString("sv-SE", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </span>
                     )}
                     {entry.file_type && entry.file_type !== "url" && (

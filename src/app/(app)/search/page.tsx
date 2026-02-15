@@ -514,10 +514,28 @@ export default function SearchPage() {
                         {ai.sentiment}
                       </span>
                     )}
-                    <span>📅 {new Date(result.created_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+                    <span>
+                      📅{" "}
+                      {new Date(result.created_at).toLocaleString("sv-SE", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </span>
                     {result.updated_at && (
                       <span title={sv ? "Redigerad" : "Edited"}>
-                        ✏️ {new Date(result.updated_at).toLocaleString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        ✏️{" "}
+                        {new Date(result.updated_at).toLocaleString("sv-SE", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </span>
                     )}
                     {result.file_type === "url" && result.file_name && (

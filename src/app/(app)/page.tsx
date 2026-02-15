@@ -10,15 +10,12 @@ import {
   AlertCircle,
   Upload,
   X,
-  Eye,
-  Pencil,
   Link,
   Globe,
 } from "lucide-react";
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
-import MarkdownContent from "@/components/markdown-content";
 
 export default function AddPage() {
   const { language } = useLanguage();
@@ -33,7 +30,7 @@ export default function AddPage() {
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileStatus, setFileStatus] = useState<string>("");
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
@@ -46,8 +43,8 @@ export default function AddPage() {
   useEffect(() => {
     const el = textareaRef.current;
     if (el) {
-      el.style.height = 'auto';
-      el.style.height = Math.max(256, el.scrollHeight) + 'px';
+      el.style.height = "auto";
+      el.style.height = Math.max(256, el.scrollHeight) + "px";
     }
   }, [content]);
 
@@ -95,7 +92,6 @@ export default function AddPage() {
         setContent(body);
         setSourceUrl(url);
         if (imageUrl) setSourceImageUrl(imageUrl);
-        setShowPreview(true);
       } catch (err) {
         setStatus({
           type: "error",
@@ -221,7 +217,6 @@ export default function AddPage() {
         }
       }
       setProcessing(false);
-      if (fileList.length > 0) setShowPreview(true);
     },
     [extractFileContent, addFiles],
   );
@@ -361,7 +356,6 @@ export default function AddPage() {
       setStatus({ type: "success", message: "Sparad!" });
       setContent("");
       setFiles([]);
-      setShowPreview(false);
       setAnalysis(null);
       setSourceUrl(null);
       setSourceImageUrl(null);
@@ -403,8 +397,8 @@ export default function AddPage() {
           value={content}
           onChange={(e) => {
             handleContentChange(e.target.value);
-            e.target.style.height = 'auto';
-            e.target.style.height = Math.max(256, e.target.scrollHeight) + 'px';
+            e.target.style.height = "auto";
+            e.target.style.height = Math.max(256, e.target.scrollHeight) + "px";
           }}
           onPaste={handlePaste}
           placeholder={
@@ -417,7 +411,7 @@ export default function AddPage() {
       </div>
 
       {/* Image preview below textarea */}
-      {sourceImageUrl && !showPreview && (
+      {sourceImageUrl && (
         <div className="mt-2 flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <img
             src={sourceImageUrl}
@@ -538,68 +532,17 @@ export default function AddPage() {
         )}
       </div>
 
-      {/* Content preview (shown after file import or via button) */}
+      {/* Content stats */}
       {content.trim() && (
-        <div className="mt-4">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-brand-500 transition-colors"
-          >
-            {showPreview ? <Pencil size={14} /> : <Eye size={14} />}
-            {showPreview
-              ? sv
-                ? "Redigera"
-                : "Edit"
-              : `${sv ? "Förhandsgranska" : "Preview"} (${content.length.toLocaleString()} ${sv ? "tecken" : "chars"}, ~${content.split(/\s+/).length} ${sv ? "ord" : "words"})`}
-          </button>
-
-          {showPreview && (
-            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 max-h-[70vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-gray-500">
-                  {content.length.toLocaleString()} {sv ? "tecken" : "chars"}{" "}
-                  &middot; ~{content.split(/\s+/).length} {sv ? "ord" : "words"}{" "}
-                  &middot; {content.split("\n").length} {sv ? "rader" : "lines"}
-                </span>
-                <button
-                  onClick={() => {
-                    setContent("");
-                    setFiles([]);
-                    setShowPreview(false);
-                    setSourceUrl(null);
-                    setSourceImageUrl(null);
-                  }}
-                  className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
-                >
-                  <X size={12} /> {sv ? "Rensa allt" : "Clear all"}
-                </button>
-              </div>
-              {sourceImageUrl && (
-                <img
-                  src={sourceImageUrl}
-                  alt=""
-                  className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
-                />
-              )}
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                <MarkdownContent content={content} />
-              </div>
-            </div>
-          )}
+        <div className="mt-2 text-xs text-gray-400">
+          {content.length.toLocaleString()} {sv ? "tecken" : "chars"} &middot; ~
+          {content.split(/\s+/).length} {sv ? "ord" : "words"} &middot;{" "}
+          {content.split("\n").length} {sv ? "rader" : "lines"}
         </div>
       )}
 
       {/* Action buttons */}
       <div className="mt-4 flex gap-2">
-        {content.trim() && !showPreview && (
-          <button
-            onClick={() => setShowPreview(true)}
-            className="flex-1 flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-3 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <Eye size={18} />
-            {sv ? "Förhandsgranska" : "Preview"}
-          </button>
-        )}
         <button
           onClick={handleSave}
           disabled={
