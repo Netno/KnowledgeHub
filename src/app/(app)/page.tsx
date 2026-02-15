@@ -13,6 +13,7 @@ export default function AddPage() {
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [analysis, setAnalysis] = useState<AiAnalysis | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [fileStatus, setFileStatus] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
 
@@ -24,17 +25,49 @@ export default function AddPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Read file content and paste into textarea
-  const readFileAsText = useCallback(async (file: File) => {
+  // Extract content from any supported file
+  const extractFileContent = useCallback(async (file: File): Promise<{ text: string; type: "text" | "image" | "document" } | null> => {
+    const name = file.name.toLowerCase();
+    const mime = file.type;
+
+    // Plain text files — read directly
     const textTypes = ["text/", "application/json", "application/xml", "application/csv"];
     const textExtensions = [".txt", ".csv", ".json", ".xml", ".md", ".log", ".html", ".css", ".js", ".ts", ".py"];
-    const isText = textTypes.some((t) => file.type.startsWith(t)) ||
-      textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+    const isText = textTypes.some((t) => mime.startsWith(t)) ||
+      textExtensions.some((ext) => name.endsWith(ext));
 
     if (isText) {
       const text = await file.text();
-      return text;
+      return { text, type: "text" };
     }
+
+    // Images — send to Gemini Vision API
+    if (mime.startsWith("image/")) {
+      setFileStatus(`🔍 Analyserar bild: ${file.name}...`);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("language", getLanguage());
+      const res = await fetch("/api/describe-image", { method: "POST", body: formData });
+      const { description } = await res.json();
+      setFileStatus("");
+      if (description) return { text: description, type: "image" };
+      return null;
+    }
+
+    // PDF, DOCX, XLSX — send to extract-text API
+    if (name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".doc") ||
+        name.endsWith(".xlsx") || name.endsWith(".xls")) {
+      const label = name.endsWith(".pdf") ? "PDF" : name.endsWith(".xlsx") || name.endsWith(".xls") ? "Excel" : "Word";
+      setFileStatus(`📄 Läser ${label}: ${file.name}...`);
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+      const { text } = await res.json();
+      setFileStatus("");
+      if (text) return { text, type: "document" };
+      return null;
+    }
+
     return null;
   }, []);
 
@@ -63,17 +96,17 @@ export default function AddPage() {
     if (hasFiles) {
       e.preventDefault();
       for (const file of pastedFiles) {
-        const text = await readFileAsText(file);
-        if (text) {
-          setContent((prev) => prev + (prev ? "\n\n" : "") + `[${file.name}]\n${text}`);
+        const result = await extractFileContent(file);
+        if (result) {
+          const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
+          setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
         } else {
-          // Binary file (image, PDF etc) → add as attachment
           addFiles([file]);
         }
       }
     }
     // If no files, let default text paste happen
-  }, [addFiles, readFileAsText]);
+  }, [addFiles, extractFileContent]);
 
   // Drag & drop
   const handleDragEnter = useCallback((e: DragEvent) => {
@@ -109,14 +142,15 @@ export default function AddPage() {
     if (droppedFiles.length === 0) return;
 
     for (const file of droppedFiles) {
-      const text = await readFileAsText(file);
-      if (text) {
-        setContent((prev) => prev + (prev ? "\n\n" : "") + `[${file.name}]\n${text}`);
+      const result = await extractFileContent(file);
+      if (result) {
+        const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
+        setContent((prev) => prev + (prev ? "\n\n" : "") + `${prefix}\n${result.text}`);
       } else {
         addFiles([file]);
       }
     }
-  }, [addFiles, readFileAsText]);
+  }, [addFiles, extractFileContent]);
 
   const handleSave = useCallback(async () => {
     if (!content.trim() && files.length === 0) {
@@ -135,15 +169,14 @@ export default function AddPage() {
 
       let fullContent = content;
 
-      // Process attached files
+      // Process any remaining attached files (ones that weren't already extracted into content)
       for (const file of files) {
-        const isImage = file.type.startsWith("image/");
-        if (isImage) {
-          // For images, note them but don't try to read as text
-          fullContent += `\n\n[Bild: ${file.name}, ${(file.size / 1024).toFixed(0)} KB, ${file.type}]`;
+        const result = await extractFileContent(file);
+        if (result) {
+          const prefix = result.type === "image" ? `[Bild: ${file.name}]` : `[${file.name}]`;
+          fullContent += `\n\n${prefix}\n${result.text}`;
         } else {
-          const text = await file.text();
-          fullContent += `\n\n[${file.type || "FILE"}: ${file.name}]\n${text.slice(0, 5000)}`;
+          fullContent += `\n\n[Fil: ${file.name}, ${(file.size / 1024).toFixed(0)} KB]`;
         }
       }
 
@@ -233,7 +266,7 @@ export default function AddPage() {
           <input
             type="file"
             multiple
-            accept=".png,.jpg,.jpeg,.gif,.csv,.pdf,.txt,.xlsx,.docx,.json,.xml,.md,.log"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.csv,.pdf,.txt,.xlsx,.xls,.docx,.doc,.json,.xml,.md,.log"
             onChange={(e) => addFiles(Array.from(e.target.files || []))}
             className="hidden"
           />
@@ -268,6 +301,11 @@ export default function AddPage() {
               </div>
             ))}
           </div>
+        )}
+        {fileStatus && (
+          <p className="mt-2 text-xs text-brand-500 flex items-center gap-1">
+            <Loader2 size={12} className="animate-spin" /> {fileStatus}
+          </p>
         )}
       </div>
 
