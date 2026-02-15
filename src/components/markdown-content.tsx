@@ -16,7 +16,7 @@ const components: Components = {
   h3: ({ children }) => (
     <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
   ),
-  p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+  p: ({ children }) => <p className="mb-0.5 leading-relaxed">{children}</p>,
   a: ({ href, children }) => (
     <a
       href={href}
@@ -133,7 +133,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`max-w-none [&>p+div]:!-mt-[0.35rem] ${className || ""}`}>
+    <div className={`max-w-none ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
