@@ -607,8 +607,13 @@ export default function SearchPage() {
                     <div className="space-y-2">
                       <textarea
                         value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full h-48 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
+                        onChange={(e) => {
+                          setEditContent(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                        }}
+                        ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                        className="w-full min-h-[12rem] max-h-[70vh] p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
                       />
                       <div className="flex gap-2">
                         <button
