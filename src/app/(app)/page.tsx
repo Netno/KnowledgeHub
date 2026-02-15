@@ -416,6 +416,20 @@ export default function AddPage() {
         />
       </div>
 
+      {/* Image preview below textarea */}
+      {sourceImageUrl && !showPreview && (
+        <div className="mt-2 flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <img
+            src={sourceImageUrl}
+            alt=""
+            className="h-16 w-16 object-cover rounded-lg"
+          />
+          <span className="text-xs text-gray-500">
+            {sv ? "Bild sparas med posten" : "Image will be saved with entry"}
+          </span>
+        </div>
+      )}
+
       {/* URL detected banner */}
       {detectedUrl && !urlLoading && (
         <div className="mt-2 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
