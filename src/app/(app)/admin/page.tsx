@@ -124,10 +124,10 @@ export default function AdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: entry.content, language: getLanguage() }),
         });
-        const { topics, entities, error } = await res.json();
+        const { title, topics, entities, error } = await res.json();
 
         if (!error && entry.ai_analysis) {
-          const updated = { ...entry.ai_analysis, topics, entities };
+          const updated = { ...entry.ai_analysis, title, topics, entities };
           await supabase.from("entries").update({ ai_analysis: updated }).eq("id", entry.id);
         }
       } catch (err) {

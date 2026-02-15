@@ -1,4 +1,5 @@
 export interface AiAnalysis {
+  title?: string;
   summary?: string;
   category?: string;
   topics?: string[];

@@ -237,8 +237,11 @@ export default function BrowsePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-sm">
-                        {ai.category || "Entry"}
+                        {ai.title || ai.category || "Entry"}
                       </span>
+                      {ai.title && ai.category && (
+                        <span className="text-xs text-gray-400">{ai.category}</span>
+                      )}
                       {entry.archived && (
                         <span className="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
                           📦 Arkiverad

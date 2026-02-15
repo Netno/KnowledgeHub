@@ -16,8 +16,9 @@ export async function POST(request: NextRequest) {
           ? "Respond in English."
           : "Respond in the same language as the content.";
 
-    const prompt = `Analyze the following content and extract ONLY tags and entities.
-Return a JSON object with ONLY these two fields:
+    const prompt = `Analyze the following content and extract tags, entities, and a title.
+Return a JSON object with ONLY these three fields:
+- title: A short descriptive title (3-8 words) that uniquely identifies this entry. Be specific — e.g. "Flytta starttid tidsstyrda auktioner" or "Blodpudding med lingonbechamel". Do NOT just use a generic category name.
 - topics: Array of 3-5 specific, searchable tags.
   RULES FOR TOPICS:
   - Be SPECIFIC, not generic. Use terms that describe exactly what this entry is about.
@@ -44,13 +45,14 @@ Respond with ONLY valid JSON, no markdown formatting.`;
       text = lines.slice(1, -1).join("\n");
     }
 
-    const { topics, entities } = JSON.parse(text);
-    return NextResponse.json({ topics: topics || [], entities: entities || [] });
+    const { title, topics, entities } = JSON.parse(text);
+    return NextResponse.json({
+      title: title || "",
+      topics: topics || [],
+      entities: entities || [],
+    });
   } catch (error) {
     console.error("Retag error:", error);
-    return NextResponse.json(
-      { error: "Failed to retag" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to retag" }, { status: 500 });
   }
 }
