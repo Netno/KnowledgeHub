@@ -7,6 +7,8 @@ export interface AiAnalysis {
   action_items?: string[];
   key_points?: string[];
   error?: string;
+  _lang?: string;
+  _translations?: Record<string, Partial<AiAnalysis>>;
 }
 
 export interface Entry {

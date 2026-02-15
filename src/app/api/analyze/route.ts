@@ -51,6 +51,8 @@ Respond with ONLY valid JSON, no markdown formatting.`;
     }
 
     const analysis = JSON.parse(text);
+    // Tag with source language for lazy translation
+    analysis._lang = language || "en";
     return NextResponse.json(analysis);
   } catch (error) {
     console.error("Analysis error:", error);

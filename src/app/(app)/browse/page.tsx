@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { useLanguage } from "@/lib/use-language";
+import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
 
 export default function BrowsePage() {
   const { language } = useLanguage();
@@ -13,6 +14,55 @@ export default function BrowsePage() {
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [filterCategory, setFilterCategory] = useState("Alla");
+  const translatingRef = useRef<Set<string>>(new Set());
+
+  // Lazy-translate entries whose ai_analysis is in a different language
+  useEffect(() => {
+    if (entries.length === 0) return;
+    const toTranslate = entries.filter(
+      (e) =>
+        e.ai_analysis &&
+        needsTranslation(e.ai_analysis, language) &&
+        !translatingRef.current.has(e.id),
+    );
+    if (toTranslate.length === 0) return;
+
+    toTranslate.forEach((e) => translatingRef.current.add(e.id));
+
+    const batch = toTranslate.slice(0, 5);
+    batch.forEach(async (entry) => {
+      try {
+        const res = await fetch("/api/translate-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entryId: entry.id,
+            analysis: entry.ai_analysis,
+            targetLang: language,
+          }),
+        });
+        if (!res.ok) return;
+        const { translated } = await res.json();
+        setEntries((prev) =>
+          prev.map((e) => {
+            if (e.id !== entry.id || !e.ai_analysis) return e;
+            return {
+              ...e,
+              ai_analysis: {
+                ...e.ai_analysis,
+                _translations: {
+                  ...(e.ai_analysis._translations || {}),
+                  [language]: translated,
+                },
+              },
+            };
+          }),
+        );
+      } catch {
+        // Silently fail
+      }
+    });
+  }, [entries, language]);
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -54,13 +104,20 @@ export default function BrowsePage() {
   };
 
   // Collect categories
+  // Collect categories (use localized names)
   const categories = Array.from(
-    new Set(entries.map((e) => e.ai_analysis?.category).filter(Boolean)),
+    new Set(
+      entries
+        .map((e) => getLocalizedAnalysis(e.ai_analysis, language)?.category)
+        .filter(Boolean),
+    ),
   ).sort();
 
   const filtered = entries.filter(
     (e) =>
-      filterCategory === "Alla" || e.ai_analysis?.category === filterCategory,
+      filterCategory === "Alla" ||
+      getLocalizedAnalysis(e.ai_analysis, language)?.category ===
+        filterCategory,
   );
 
   return (
@@ -111,7 +168,7 @@ export default function BrowsePage() {
       ) : (
         <div className="space-y-3">
           {filtered.map((entry) => {
-            const ai = entry.ai_analysis || {};
+            const ai = getLocalizedAnalysis(entry.ai_analysis, language) || {};
             return (
               <div
                 key={entry.id}
@@ -155,7 +212,12 @@ export default function BrowsePage() {
                       </span>
                     )}
                     {entry.file_type === "url" && entry.file_name && (
-                      <a href={entry.file_name} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-500 hover:underline">
+                      <a
+                        href={entry.file_name}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-brand-500 hover:underline"
+                      >
                         🔗 {sv ? "Källa" : "Source"}
                       </a>
                     )}

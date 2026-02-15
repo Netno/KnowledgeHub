@@ -14,6 +14,7 @@ import {
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
+import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
 
 const PAGE_SIZE = 50;
 
@@ -128,6 +129,58 @@ export default function SearchPage() {
   const [dateLabel, setDateLabel] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const translatingRef = useRef<Set<string>>(new Set());
+
+  // Lazy-translate entries whose ai_analysis is in a different language
+  useEffect(() => {
+    if (results.length === 0) return;
+    const toTranslate = results.filter(
+      (r) =>
+        r.ai_analysis &&
+        needsTranslation(r.ai_analysis, language) &&
+        !translatingRef.current.has(r.id),
+    );
+    if (toTranslate.length === 0) return;
+
+    // Mark as in-flight
+    toTranslate.forEach((r) => translatingRef.current.add(r.id));
+
+    // Translate up to 5 at a time to avoid hammering the API
+    const batch = toTranslate.slice(0, 5);
+    batch.forEach(async (entry) => {
+      try {
+        const res = await fetch("/api/translate-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entryId: entry.id,
+            analysis: entry.ai_analysis,
+            targetLang: language,
+          }),
+        });
+        if (!res.ok) return;
+        const { translated } = await res.json();
+        // Update the entry in state with the translation cached
+        setResults((prev) =>
+          prev.map((r) => {
+            if (r.id !== entry.id || !r.ai_analysis) return r;
+            return {
+              ...r,
+              ai_analysis: {
+                ...r.ai_analysis,
+                _translations: {
+                  ...(r.ai_analysis._translations || {}),
+                  [language]: translated,
+                },
+              },
+            };
+          }),
+        );
+      } catch {
+        // Silently fail — original text is still shown
+      }
+    });
+  }, [results, language]);
 
   // Infinite scroll: load more when sentinel enters viewport
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -378,7 +431,7 @@ export default function SearchPage() {
       {/* Results */}
       <div className="mt-4 space-y-3">
         {results.slice(0, displayCount).map((result, i) => {
-          const ai = result.ai_analysis || {};
+          const ai = getLocalizedAnalysis(result.ai_analysis, language) || {};
           const similarity = Math.round((result.similarity || 0) * 100);
           const expanded = expandedId === result.id;
 
