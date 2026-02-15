@@ -12,29 +12,48 @@ function detectDateFilter(query: string): { from: string | null; to: string | nu
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
 
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const daysAgo = (n: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
 
-  // Today
+  const yesterdayStr = daysAgo(1);
+
+  // "sedan idag" / "since today" → only today
+  if (/\b(sedan idag|sedan i dag|since today)\b/.test(q)) {
+    return { from: today, to: today, label: today };
+  }
+
+  // "sedan igår" / "since yesterday" → yesterday + today
+  if (/\b(sedan igår|sedan i går|since yesterday|från igår|från i går)\b/.test(q)) {
+    return { from: yesterdayStr, to: today, label: `${yesterdayStr} → ${today}` };
+  }
+
+  // Just "idag" / "today"
   if (/\b(idag|today|i dag)\b/.test(q)) {
     return { from: today, to: today, label: today };
   }
 
-  // Yesterday
+  // Just "igår" / "yesterday"
   if (/\b(igår|yesterday|i går)\b/.test(q)) {
     return { from: yesterdayStr, to: yesterdayStr, label: yesterdayStr };
   }
 
+  // "senaste X dagarna" / "last X days"
+  const daysMatch = q.match(/\b(?:senaste|sista|last)\s+(\d+)\s+(?:dagarna|dagar|days)\b/);
+  if (daysMatch) {
+    const n = parseInt(daysMatch[1]);
+    return { from: daysAgo(n), to: today, label: `${daysAgo(n)} → ${today}` };
+  }
+
   // This week / last 7 days
-  if (/\b(denna vecka|den här veckan|this week|senaste veckan|sista veckan|senaste 7 dagarna|last week|last 7 days)\b/.test(q)) {
-    const weekAgo = new Date(now);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return { from: weekAgo.toISOString().slice(0, 10), to: today, label: `${weekAgo.toISOString().slice(0, 10)} → ${today}` };
+  if (/\b(denna vecka|den här veckan|this week|senaste veckan|sista veckan|last week)\b/.test(q)) {
+    return { from: daysAgo(7), to: today, label: `${daysAgo(7)} → ${today}` };
   }
 
   // This month / last 30 days
-  if (/\b(denna månad|den här månaden|this month|senaste månaden|sista månaden|senaste 30 dagarna|last month|last 30 days)\b/.test(q)) {
+  if (/\b(denna månad|den här månaden|this month|senaste månaden|sista månaden|last month)\b/.test(q)) {
     const monthAgo = new Date(now);
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     return { from: monthAgo.toISOString().slice(0, 10), to: today, label: `${monthAgo.toISOString().slice(0, 10)} → ${today}` };
