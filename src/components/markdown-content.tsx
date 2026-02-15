@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import type { Components } from "react-markdown";
+import React from "react";
 
 const components: Components = {
   h1: ({ children }) => (
@@ -26,13 +27,33 @@ const components: Components = {
       {children}
     </a>
   ),
-  ul: ({ children }) => (
-    <ul style={{ listStyleType: "disc" }} className="list-inside mb-2 mt-0 space-y-0.5">{children}</ul>
-  ),
-  ol: ({ children }) => (
-    <ol style={{ listStyleType: "decimal" }} className="list-inside mb-2 mt-0 space-y-0.5">{children}</ol>
-  ),
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  ul: ({ children }) => {
+    const items = React.Children.toArray(children).filter(React.isValidElement);
+    return (
+      <div className="mb-2 mt-0 space-y-0.5">
+        {items.map((child, i) => (
+          <div key={i} className="leading-relaxed flex">
+            <span className="mr-1.5 shrink-0 select-none">•</span>
+            <span className="flex-1">{(child.props as { children?: React.ReactNode }).children}</span>
+          </div>
+        ))}
+      </div>
+    );
+  },
+  ol: ({ children }) => {
+    const items = React.Children.toArray(children).filter(React.isValidElement);
+    return (
+      <div className="mb-2 mt-0 space-y-0.5">
+        {items.map((child, i) => (
+          <div key={i} className="leading-relaxed flex">
+            <span className="mr-1.5 shrink-0 select-none">{i + 1}.</span>
+            <span className="flex-1">{(child.props as { children?: React.ReactNode }).children}</span>
+          </div>
+        ))}
+      </div>
+    );
+  },
+  li: ({ children }) => <>{children}</>,
   strong: ({ children }) => (
     <strong className="font-semibold">{children}</strong>
   ),
