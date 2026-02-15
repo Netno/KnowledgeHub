@@ -7,15 +7,15 @@ import type { Components } from "react-markdown";
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
+    <h1 className="text-lg font-bold">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-bold mt-3 mb-1.5">{children}</h2>
+    <h2 className="text-base font-bold">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
+    <h3 className="text-sm font-semibold">{children}</h3>
   ),
-  p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+  p: ({ children }) => <p className="leading-normal">{children}</p>,
   a: ({ href, children }) => (
     <a
       href={href}
@@ -27,18 +27,18 @@ const components: Components = {
     </a>
   ),
   ul: ({ children }) => (
-    <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>
+    <ul className="list-disc list-inside">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>
+    <ol className="list-decimal list-inside">{children}</ol>
   ),
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  li: ({ children }) => <li className="leading-normal">{children}</li>,
   strong: ({ children }) => (
     <strong className="font-semibold">{children}</strong>
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
   blockquote: ({ children }) => (
-    <blockquote className="border-l-3 border-brand-400/50 pl-3 my-2 text-gray-600 dark:text-gray-400 italic">
+    <blockquote className="border-l-3 border-brand-400/50 pl-3 my-1 text-gray-600 dark:text-gray-400 italic">
       {children}
     </blockquote>
   ),
@@ -46,7 +46,7 @@ const components: Components = {
     const isBlock = className?.includes("language-");
     if (isBlock) {
       return (
-        <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 my-2 overflow-x-auto text-xs">
+        <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 my-1 overflow-x-auto text-xs">
           <code>{children}</code>
         </pre>
       );
