@@ -2,9 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Archive, ArchiveRestore, Trash2, Loader2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Loader2,
+  Pencil,
+  Save,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { useLanguage } from "@/lib/use-language";
+import { getLanguage } from "@/lib/use-language";
 import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
 
 export default function BrowsePage() {
@@ -14,6 +25,10 @@ export default function BrowsePage() {
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [filterCategory, setFilterCategory] = useState("Alla");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const translatingRef = useRef<Set<string>>(new Set());
 
   // Lazy-translate entries whose ai_analysis is in a different language
@@ -70,7 +85,7 @@ export default function BrowsePage() {
     let query = supabase
       .from("entries")
       .select(
-        "id, content, ai_analysis, file_type, file_name, created_at, archived",
+        "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -97,10 +112,52 @@ export default function BrowsePage() {
   };
 
   const deleteEntry = async (id: string) => {
-    if (!confirm("Ta bort permanent?")) return;
+    if (!confirm(sv ? "Ta bort permanent?" : "Delete permanently?")) return;
     const supabase = createClient();
     await supabase.from("entries").delete().eq("id", id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const startEdit = (entry: Entry) => {
+    setEditingId(entry.id);
+    setEditContent(entry.content);
+    setExpandedId(entry.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent("");
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editContent.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch("/api/update-entry", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entryId: id,
+          content: editContent,
+          language: getLanguage(),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      const { ai_analysis, updated_at } = await res.json();
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? { ...e, content: editContent, ai_analysis, updated_at }
+            : e,
+        ),
+      );
+      setEditingId(null);
+      setEditContent("");
+    } catch (err) {
+      console.error("Edit error:", err);
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   // Collect categories
@@ -206,6 +263,14 @@ export default function BrowsePage() {
                     <span className="text-xs text-gray-400">
                       {entry.created_at.slice(0, 10)}
                     </span>
+                    {entry.updated_at && (
+                      <span
+                        className="text-xs text-gray-400"
+                        title={sv ? "Redigerad" : "Edited"}
+                      >
+                        ✏️ {entry.updated_at.slice(0, 10)}
+                      </span>
+                    )}
                     {entry.file_type && entry.file_type !== "url" && (
                       <span className="text-xs text-gray-400">
                         📎 {entry.file_type}
@@ -222,6 +287,13 @@ export default function BrowsePage() {
                       </a>
                     )}
                     <div className="flex gap-1 mt-1">
+                      <button
+                        onClick={() => startEdit(entry)}
+                        className="p-1 text-gray-400 hover:text-brand-500 transition-colors"
+                        title={sv ? "Redigera" : "Edit"}
+                      >
+                        <Pencil size={14} />
+                      </button>
                       <button
                         onClick={() =>
                           toggleArchive(entry.id, !!entry.archived)
@@ -245,6 +317,75 @@ export default function BrowsePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Expand / Edit actions */}
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    onClick={() =>
+                      setExpandedId(expandedId === entry.id ? null : entry.id)
+                    }
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  >
+                    {expandedId === entry.id ? (
+                      <ChevronUp size={14} />
+                    ) : (
+                      <ChevronDown size={14} />
+                    )}
+                    {expandedId === entry.id
+                      ? sv
+                        ? "Dölj"
+                        : "Hide"
+                      : sv
+                        ? "Visa innehåll"
+                        : "Show content"}
+                  </button>
+                </div>
+
+                {/* Expanded content / Edit mode */}
+                {expandedId === entry.id && (
+                  <div className="mt-2">
+                    {editingId === entry.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          className="w-full h-48 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveEdit(entry.id)}
+                            disabled={editSaving}
+                            className="flex items-center gap-1 text-xs bg-brand-400 hover:bg-brand-500 text-gray-900 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                          >
+                            {editSaving ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Save size={12} />
+                            )}
+                            {editSaving
+                              ? sv
+                                ? "Sparar & analyserar..."
+                                : "Saving & analyzing..."
+                              : sv
+                                ? "Spara"
+                                : "Save"}
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            <X size={12} />
+                            {sv ? "Avbryt" : "Cancel"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm whitespace-pre-wrap break-words">
+                        {entry.content}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

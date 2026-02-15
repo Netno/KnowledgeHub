@@ -10,6 +10,9 @@ import {
   ArchiveRestore,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
@@ -126,6 +129,9 @@ export default function SearchPage() {
   const [aiSummary, setAiSummary] = useState("");
   const [searching, setSearching] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const [dateLabel, setDateLabel] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -221,7 +227,7 @@ export default function SearchPage() {
         let dbQuery = supabase
           .from("entries")
           .select(
-            "id, content, ai_analysis, file_type, file_name, created_at, archived",
+            "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived",
           )
           .gte("created_at", `${dateFilter.from}T00:00:00`)
           .order("created_at", { ascending: false });
@@ -342,6 +348,48 @@ export default function SearchPage() {
     );
   };
 
+  const startEdit = (entry: Entry) => {
+    setEditingId(entry.id);
+    setEditContent(entry.content);
+    setExpandedId(entry.id);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditContent("");
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editContent.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch("/api/update-entry", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entryId: id,
+          content: editContent,
+          language: getLanguage(),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      const { ai_analysis, updated_at } = await res.json();
+      setResults((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, content: editContent, ai_analysis, updated_at }
+            : r,
+        ),
+      );
+      setEditingId(null);
+      setEditContent("");
+    } catch (err) {
+      console.error("Edit error:", err);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const sentimentEmoji: Record<string, string> = {
     positive: "😊",
     negative: "😟",
@@ -458,6 +506,11 @@ export default function SearchPage() {
                       </span>
                     )}
                     <span>📅 {result.created_at.slice(0, 10)}</span>
+                    {result.updated_at && (
+                      <span title={sv ? "Redigerad" : "Edited"}>
+                        ✏️ {result.updated_at.slice(0, 10)}
+                      </span>
+                    )}
                     {result.file_type === "url" && result.file_name && (
                       <a
                         href={result.file_name}
@@ -519,6 +572,14 @@ export default function SearchPage() {
                       : "Show content"}
                 </button>
                 <button
+                  onClick={() => startEdit(result)}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-brand-500 transition-colors"
+                  title={sv ? "Redigera" : "Edit"}
+                >
+                  <Pencil size={14} />
+                  {sv ? "Redigera" : "Edit"}
+                </button>
+                <button
                   onClick={() => toggleArchive(result.id, !!result.archived)}
                   className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                   title={
@@ -541,8 +602,47 @@ export default function SearchPage() {
 
               {/* Expanded content */}
               {expanded && (
-                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm whitespace-pre-wrap break-words">
-                  {result.content}
+                <div className="mt-3">
+                  {editingId === result.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full h-48 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 border border-gray-200 dark:border-gray-700"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEdit(result.id)}
+                          disabled={editSaving}
+                          className="flex items-center gap-1 text-xs bg-brand-400 hover:bg-brand-500 text-gray-900 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                        >
+                          {editSaving ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Save size={12} />
+                          )}
+                          {editSaving
+                            ? sv
+                              ? "Sparar & analyserar..."
+                              : "Saving & analyzing..."
+                            : sv
+                              ? "Spara"
+                              : "Save"}
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          <X size={12} />
+                          {sv ? "Avbryt" : "Cancel"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm whitespace-pre-wrap break-words">
+                      {result.content}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -98,7 +98,9 @@ export async function POST(request: NextRequest) {
             }
             if (item.recipeInstructions) {
               parts.push("\n## Instruktioner\n");
-              const steps = Array.isArray(item.recipeInstructions) ? item.recipeInstructions : [item.recipeInstructions];
+              const steps = Array.isArray(item.recipeInstructions)
+                ? item.recipeInstructions
+                : [item.recipeInstructions];
               steps.forEach((step: { text?: string } | string, i: number) => {
                 const t = typeof step === "string" ? step : step.text || "";
                 if (t) parts.push(`${i + 1}. ${t}`);
@@ -107,7 +109,9 @@ export async function POST(request: NextRequest) {
             structuredText = parts.join("\n");
           }
         }
-      } catch { /* ignore parse errors */ }
+      } catch {
+        /* ignore parse errors */
+      }
     });
 
     // Try to find the main content area

@@ -18,6 +18,7 @@ export interface Entry {
   file_type: string | null;
   file_name: string | null;
   created_at: string;
+  updated_at?: string | null;
   archived?: boolean;
   embedding?: number[] | null;
   similarity?: number;
