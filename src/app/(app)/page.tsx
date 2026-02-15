@@ -318,6 +318,12 @@ export default function AddPage() {
                 <span className="text-xs text-gray-500">
                   {content.length.toLocaleString()} tecken &middot; ~{content.split(/\s+/).length} ord &middot; {content.split("\n").length} rader
                 </span>
+                <button
+                  onClick={() => { setContent(""); setFiles([]); setShowPreview(false); }}
+                  className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
+                >
+                  <X size={12} /> Rensa allt
+                </button>
               </div>
               <pre className="text-sm whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">
                 {content}
