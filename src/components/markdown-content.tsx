@@ -7,15 +7,15 @@ import type { Components } from "react-markdown";
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="text-lg font-bold mt-3">{children}</h1>
+    <h1 className="text-lg font-bold mt-4 mb-2">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-bold mt-2">{children}</h2>
+    <h2 className="text-base font-bold mt-3 mb-1.5">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-semibold mt-1.5">{children}</h3>
+    <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
   ),
-  p: ({ children }) => <p className="leading-normal">{children}</p>,
+  p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
   a: ({ href, children }) => (
     <a
       href={href}
@@ -27,12 +27,12 @@ const components: Components = {
     </a>
   ),
   ul: ({ children }) => (
-    <ul className="list-disc list-inside">{children}</ul>
+    <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal list-inside">{children}</ol>
+    <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>
   ),
-  li: ({ children }) => <li className="leading-normal">{children}</li>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
   strong: ({ children }) => (
     <strong className="font-semibold">{children}</strong>
   ),
@@ -112,7 +112,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`max-w-none [&_p]:mb-0 [&_p]:mt-0 [&_ul]:mt-0 [&_ul]:mb-1 [&_ol]:mt-0 [&_ol]:mb-1 ${className || ""}`}>
+    <div className={`prose-sm max-w-none [&>p+ul]:mt-0 [&>p+ol]:mt-0 [&>p+ul]:-mt-1 [&>p+ol]:-mt-1 ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
