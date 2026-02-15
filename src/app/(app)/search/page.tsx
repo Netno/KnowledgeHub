@@ -30,6 +30,16 @@ function detectDateFilter(query: string): { from: string | null; to: string | nu
     return { from: yesterdayStr, to: today, label: `${yesterdayStr} → ${today}` };
   }
 
+  // "sedan i förrgår" / "since day before yesterday" (must be before "i förrgår")
+  if (/\b(sedan i förrgår|sedan förrgår|since day before yesterday)\b/.test(q)) {
+    return { from: daysAgo(2), to: today, label: `${daysAgo(2)} → ${today}` };
+  }
+
+  // "i förrgår" / "day before yesterday"
+  if (/\b(i förrgår|i förrgar|förrgår|förrgar|day before yesterday)\b/.test(q)) {
+    return { from: daysAgo(2), to: daysAgo(2), label: daysAgo(2) };
+  }
+
   // Just "idag" / "today"
   if (/\b(idag|today|i dag)\b/.test(q)) {
     return { from: today, to: today, label: today };
@@ -88,50 +98,84 @@ export default function SearchPage() {
       const dateFilter = detectDateFilter(query);
       if (dateFilter.label) setDateLabel(dateFilter.label);
 
-      // Generate query embedding
-      const embedRes = await fetch("/api/embed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: query, taskType: "RETRIEVAL_QUERY" }),
-      });
-      const { embedding } = await embedRes.json();
-      if (!embedding) throw new Error("Failed to generate embedding");
-
-      // Search via Supabase RPC
       const supabase = createClient();
-      const { data, error } = await supabase.rpc("match_entries", {
-        query_embedding: embedding,
-        match_threshold: 0.65,
-        match_count: 50,
-      });
+      let filtered: Entry[] = [];
 
-      if (error) throw error;
-
-      // Apply auto-detected date filter
-      let filtered = data || [];
       if (dateFilter.from) {
-        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) >= dateFilter.from!);
-      }
-      if (dateFilter.to) {
-        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) <= dateFilter.to!);
+        // Date-based query: fetch ALL entries in the date range directly from DB
+        let dbQuery = supabase
+          .from("entries")
+          .select("*")
+          .gte("created_at", `${dateFilter.from}T00:00:00`)
+          .order("created_at", { ascending: false });
+
+        if (dateFilter.to) {
+          // Add one day to 'to' to include the full day
+          const toDate = new Date(dateFilter.to);
+          toDate.setDate(toDate.getDate() + 1);
+          dbQuery = dbQuery.lt("created_at", toDate.toISOString().slice(0, 10) + "T00:00:00");
+        }
+
+        const { data, error } = await dbQuery;
+        if (error) throw error;
+        filtered = data || [];
+      } else {
+        // Content-based query: use semantic search
+        const embedRes = await fetch("/api/embed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: query, taskType: "RETRIEVAL_QUERY" }),
+        });
+        const { embedding } = await embedRes.json();
+        if (!embedding) throw new Error("Failed to generate embedding");
+
+        const { data, error } = await supabase.rpc("match_entries", {
+          query_embedding: embedding,
+          match_threshold: 0.65,
+          match_count: 20,
+        });
+
+        if (error) throw error;
+        filtered = data || [];
       }
 
-      // Limit to top 10 after filtering
-      filtered = filtered.slice(0, 10);
       setResults(filtered);
 
       // Generate AI summary with dates included
       if (filtered.length > 0) {
-        const summariesWithDates = filtered.map((r: Entry) => {
-          const summary = r.ai_analysis?.summary || r.content.slice(0, 100);
-          const date = r.created_at.slice(0, 10);
-          return `[${date}] ${summary}`;
-        });
+        // For large result sets, summarize categories/counts rather than all entries
+        const totalCount = filtered.length;
+        let summariesForAI: string[];
+
+        if (totalCount > 20) {
+          // Group by category and give counts + sample summaries
+          const categories: Record<string, { count: number; samples: string[] }> = {};
+          for (const r of filtered) {
+            const cat = r.ai_analysis?.category || "Okategoriserat";
+            if (!categories[cat]) categories[cat] = { count: 0, samples: [] };
+            categories[cat].count++;
+            if (categories[cat].samples.length < 2) {
+              categories[cat].samples.push(r.ai_analysis?.summary || r.content.slice(0, 80));
+            }
+          }
+          summariesForAI = [
+            `Totalt ${totalCount} poster.`,
+            ...Object.entries(categories).map(([cat, { count, samples }]) =>
+              `${cat}: ${count} st (t.ex. "${samples[0]}"${samples[1] ? `, "${samples[1]}"` : ""})`
+            ),
+          ];
+        } else {
+          summariesForAI = filtered.map((r: Entry) => {
+            const summary = r.ai_analysis?.summary || r.content.slice(0, 100);
+            const date = r.created_at.slice(0, 10);
+            return `[${date}] ${summary}`;
+          });
+        }
 
         const sumRes = await fetch("/api/summarize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, summaries: summariesWithDates, language: getLanguage() }),
+          body: JSON.stringify({ query, summaries: summariesForAI, language: getLanguage() }),
         });
         const { summary } = await sumRes.json();
         setAiSummary(summary || "");
@@ -255,17 +299,19 @@ export default function SearchPage() {
                     <span>📅 {result.created_at.slice(0, 10)}</span>
                   </div>
                 </div>
-                <span
-                  className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
-                    similarity >= 80
-                      ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
-                      : similarity >= 70
-                      ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {similarity}%
-                </span>
+                {result.similarity != null && result.similarity > 0 && (
+                  <span
+                    className={`shrink-0 text-xs font-bold px-2 py-1 rounded ${
+                      similarity >= 80
+                        ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
+                        : similarity >= 70
+                        ? "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {similarity}%
+                  </span>
+                )}
               </div>
 
               {/* Topics */}
