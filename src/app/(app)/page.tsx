@@ -438,7 +438,12 @@ export default function AddPage() {
             {sv ? "Hämta innehåll" : "Fetch content"}
           </button>
           <button
-            onClick={() => setDetectedUrl(null)}
+            onClick={() => {
+              setDetectedUrl(null);
+              setContent("");
+              setSourceUrl(null);
+              setSourceImageUrl(null);
+            }}
             className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-200"
           >
             <X size={14} />
