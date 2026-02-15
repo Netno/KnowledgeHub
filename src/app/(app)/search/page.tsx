@@ -611,7 +611,7 @@ export default function SearchPage() {
                   <h3 className="font-semibold text-sm">
                     {i + 1}. {ai.title || ai.summary || result.content.slice(0, 80)}
                   </h3>
-                  {ai.summary && (
+                  {ai.title && ai.summary && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {ai.summary}
                     </p>
