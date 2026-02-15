@@ -490,9 +490,10 @@ export default function AddPage() {
               setContent("");
               setSourceImageUrl(null);
             }}
-            className="text-gray-400 hover:text-red-500"
+            className="flex items-center gap-1 text-gray-400 hover:text-red-500 shrink-0"
           >
             <X size={12} />
+            <span>{sv ? "Rensa allt" : "Clear all"}</span>
           </button>
         </div>
       )}
