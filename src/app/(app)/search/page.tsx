@@ -2,39 +2,51 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp, Calendar } from "lucide-react";
+import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 
-type DateFilter = "all" | "today" | "yesterday" | "week" | "month" | "custom";
-
-function getDateRange(filter: DateFilter, customFrom: string, customTo: string): { from: string | null; to: string | null } {
+/** Parse date intent from natural language query */
+function detectDateFilter(query: string): { from: string | null; to: string | null; label: string | null } {
+  const q = query.toLowerCase();
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
+  const today = now.toISOString().slice(0, 10);
 
-  switch (filter) {
-    case "today":
-      return { from: todayStr, to: null };
-    case "yesterday": {
-      const y = new Date(now);
-      y.setDate(y.getDate() - 1);
-      return { from: y.toISOString().slice(0, 10), to: todayStr };
-    }
-    case "week": {
-      const w = new Date(now);
-      w.setDate(w.getDate() - 7);
-      return { from: w.toISOString().slice(0, 10), to: null };
-    }
-    case "month": {
-      const m = new Date(now);
-      m.setMonth(m.getMonth() - 1);
-      return { from: m.toISOString().slice(0, 10), to: null };
-    }
-    case "custom":
-      return { from: customFrom || null, to: customTo || null };
-    default:
-      return { from: null, to: null };
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  // Today
+  if (/\b(idag|today|i dag)\b/.test(q)) {
+    return { from: today, to: today, label: today };
   }
+
+  // Yesterday
+  if (/\b(igår|yesterday|i går)\b/.test(q)) {
+    return { from: yesterdayStr, to: yesterdayStr, label: yesterdayStr };
+  }
+
+  // This week / last 7 days
+  if (/\b(denna vecka|den här veckan|this week|senaste veckan|sista veckan|senaste 7 dagarna|last week|last 7 days)\b/.test(q)) {
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return { from: weekAgo.toISOString().slice(0, 10), to: today, label: `${weekAgo.toISOString().slice(0, 10)} → ${today}` };
+  }
+
+  // This month / last 30 days
+  if (/\b(denna månad|den här månaden|this month|senaste månaden|sista månaden|senaste 30 dagarna|last month|last 30 days)\b/.test(q)) {
+    const monthAgo = new Date(now);
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    return { from: monthAgo.toISOString().slice(0, 10), to: today, label: `${monthAgo.toISOString().slice(0, 10)} → ${today}` };
+  }
+
+  // Specific date YYYY-MM-DD
+  const dateMatch = q.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (dateMatch) {
+    return { from: dateMatch[1], to: dateMatch[1], label: dateMatch[1] };
+  }
+
+  return { from: null, to: null, label: null };
 }
 
 export default function SearchPage() {
@@ -43,17 +55,20 @@ export default function SearchPage() {
   const [aiSummary, setAiSummary] = useState("");
   const [searching, setSearching] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo] = useState("");
+  const [dateLabel, setDateLabel] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
     setResults([]);
     setAiSummary("");
+    setDateLabel(null);
 
     try {
+      // Detect date intent from query
+      const dateFilter = detectDateFilter(query);
+      if (dateFilter.label) setDateLabel(dateFilter.label);
+
       // Generate query embedding
       const embedRes = await fetch("/api/embed", {
         method: "POST",
@@ -73,14 +88,13 @@ export default function SearchPage() {
 
       if (error) throw error;
 
-      // Apply date filter client-side
-      const { from, to } = getDateRange(dateFilter, customFrom, customTo);
+      // Apply auto-detected date filter
       let filtered = data || [];
-      if (from) {
-        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) >= from);
+      if (dateFilter.from) {
+        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) >= dateFilter.from!);
       }
-      if (to) {
-        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) <= to);
+      if (dateFilter.to) {
+        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) <= dateFilter.to!);
       }
 
       // Limit to top 10 after filtering
@@ -104,9 +118,10 @@ export default function SearchPage() {
         setAiSummary(summary || "");
       } else {
         const lang = getLanguage();
-        setAiSummary(lang === "sv"
-          ? "Inga poster hittades för det valda datumintervallet."
-          : "No entries found for the selected date range.");
+        const noResults = dateFilter.label
+          ? (lang === "sv" ? `Inga poster hittades för ${dateFilter.label}.` : `No entries found for ${dateFilter.label}.`)
+          : (lang === "sv" ? "Inga matchande poster hittades." : "No matching entries found.");
+        setAiSummary(noResults);
       }
     } catch (err) {
       console.error("Search error:", err);
@@ -153,46 +168,11 @@ export default function SearchPage() {
         </button>
       </div>
 
-      {/* Date filter */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Calendar size={14} className="text-gray-400" />
-        {([
-          ["all", "Alla"],
-          ["today", "Idag"],
-          ["yesterday", "Igår"],
-          ["week", "Senaste veckan"],
-          ["month", "Senaste månaden"],
-          ["custom", "Välj datum"],
-        ] as [DateFilter, string][]).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setDateFilter(value)}
-            className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-              dateFilter === value
-                ? "bg-brand-400 text-gray-900 font-medium"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {dateFilter === "custom" && (
-        <div className="mt-2 flex gap-2 items-center">
-          <input
-            type="date"
-            value={customFrom}
-            onChange={(e) => setCustomFrom(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-          />
-          <span className="text-xs text-gray-400">—</span>
-          <input
-            type="date"
-            value={customTo}
-            onChange={(e) => setCustomTo(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
-          />
-        </div>
+      {/* Auto-detected date filter indicator */}
+      {dateLabel && (
+        <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+          📅 Filtrerat på: {dateLabel}
+        </p>
       )}
 
       {/* AI Summary */}
