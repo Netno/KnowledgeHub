@@ -34,7 +34,9 @@ const components: Components = {
         {items.map((child, i) => (
           <div key={i} className="leading-relaxed flex">
             <span className="mr-1.5 shrink-0 select-none">•</span>
-            <span className="flex-1">{(child.props as { children?: React.ReactNode }).children}</span>
+            <span className="flex-1">
+              {(child.props as { children?: React.ReactNode }).children}
+            </span>
           </div>
         ))}
       </div>
@@ -47,7 +49,9 @@ const components: Components = {
         {items.map((child, i) => (
           <div key={i} className="leading-relaxed flex">
             <span className="mr-1.5 shrink-0 select-none">{i + 1}.</span>
-            <span className="flex-1">{(child.props as { children?: React.ReactNode }).children}</span>
+            <span className="flex-1">
+              {(child.props as { children?: React.ReactNode }).children}
+            </span>
           </div>
         ))}
       </div>

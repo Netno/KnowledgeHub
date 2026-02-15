@@ -24,12 +24,16 @@ import MarkdownContent from "@/components/markdown-content";
 
 const PAGE_SIZE = 50;
 
-/** Parse date intent from natural language query */
-function detectDateFilter(query: string): {
-  from: string | null;
-  to: string | null;
-  label: string | null;
-} {
+interface QueryIntent {
+  type: "date" | "latest" | "semantic";
+  from?: string | null;
+  to?: string | null;
+  label?: string | null;
+  limit?: number;
+}
+
+/** Parse date/recency intent from natural language query */
+function detectQueryIntent(query: string): QueryIntent {
   const q = query.toLowerCase();
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -42,9 +46,27 @@ function detectDateFilter(query: string): {
 
   const yesterdayStr = daysAgo(1);
 
+  // "senaste N dokumenten/posterna" / "latest N entries/documents"
+  const latestNMatch = q.match(
+    /(?:senaste|sista|latest|last|nyaste|newest)\s+(\d+)\s*(?:dokumenten|dokument|posterna|poster|entries|documents|inläggen|inlägg)?/,
+  );
+  if (latestNMatch) {
+    const n = parseInt(latestNMatch[1]);
+    return { type: "latest", limit: n, label: `${n} senaste` };
+  }
+
+  // "senaste dokumenten/posterna" without a number → default 10
+  if (
+    /(?:senaste|sista|nyaste|newest|latest|most recent)\s*(?:dokumenten|dokument|posterna|poster|entries|documents|inläggen|inlägg)/.test(
+      q,
+    )
+  ) {
+    return { type: "latest", limit: 10, label: "10 senaste" };
+  }
+
   // "sedan idag" / "since today" → only today
   if (/\b(sedan idag|sedan i dag|since today)\b/.test(q)) {
-    return { from: today, to: today, label: today };
+    return { type: "date", from: today, to: today, label: today };
   }
 
   // "sedan igår" / "since yesterday" → yesterday + today
@@ -52,6 +74,7 @@ function detectDateFilter(query: string): {
     /\b(sedan igår|sedan i går|since yesterday|från igår|från i går)\b/.test(q)
   ) {
     return {
+      type: "date",
       from: yesterdayStr,
       to: today,
       label: `${yesterdayStr} → ${today}`,
@@ -62,24 +85,39 @@ function detectDateFilter(query: string): {
   if (
     /\b(sedan i förrgår|sedan förrgår|since day before yesterday)\b/.test(q)
   ) {
-    return { from: daysAgo(2), to: today, label: `${daysAgo(2)} → ${today}` };
+    return {
+      type: "date",
+      from: daysAgo(2),
+      to: today,
+      label: `${daysAgo(2)} → ${today}`,
+    };
   }
 
   // "i förrgår" / "day before yesterday"
   if (
     /\b(i förrgår|i förrgar|förrgår|förrgar|day before yesterday)\b/.test(q)
   ) {
-    return { from: daysAgo(2), to: daysAgo(2), label: daysAgo(2) };
+    return {
+      type: "date",
+      from: daysAgo(2),
+      to: daysAgo(2),
+      label: daysAgo(2),
+    };
   }
 
   // Just "idag" / "today"
   if (/\b(idag|today|i dag)\b/.test(q)) {
-    return { from: today, to: today, label: today };
+    return { type: "date", from: today, to: today, label: today };
   }
 
   // Just "igår" / "yesterday"
   if (/\b(igår|yesterday|i går)\b/.test(q)) {
-    return { from: yesterdayStr, to: yesterdayStr, label: yesterdayStr };
+    return {
+      type: "date",
+      from: yesterdayStr,
+      to: yesterdayStr,
+      label: yesterdayStr,
+    };
   }
 
   // "senaste X dagarna" / "last X days"
@@ -88,7 +126,12 @@ function detectDateFilter(query: string): {
   );
   if (daysMatch) {
     const n = parseInt(daysMatch[1]);
-    return { from: daysAgo(n), to: today, label: `${daysAgo(n)} → ${today}` };
+    return {
+      type: "date",
+      from: daysAgo(n),
+      to: today,
+      label: `${daysAgo(n)} → ${today}`,
+    };
   }
 
   // This week / last 7 days
@@ -97,7 +140,12 @@ function detectDateFilter(query: string): {
       q,
     )
   ) {
-    return { from: daysAgo(7), to: today, label: `${daysAgo(7)} → ${today}` };
+    return {
+      type: "date",
+      from: daysAgo(7),
+      to: today,
+      label: `${daysAgo(7)} → ${today}`,
+    };
   }
 
   // This month / last 30 days
@@ -109,6 +157,7 @@ function detectDateFilter(query: string): {
     const monthAgo = new Date(now);
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     return {
+      type: "date",
       from: monthAgo.toISOString().slice(0, 10),
       to: today,
       label: `${monthAgo.toISOString().slice(0, 10)} → ${today}`,
@@ -118,10 +167,15 @@ function detectDateFilter(query: string): {
   // Specific date YYYY-MM-DD
   const dateMatch = q.match(/\b(\d{4}-\d{2}-\d{2})\b/);
   if (dateMatch) {
-    return { from: dateMatch[1], to: dateMatch[1], label: dateMatch[1] };
+    return {
+      type: "date",
+      from: dateMatch[1],
+      to: dateMatch[1],
+      label: dateMatch[1],
+    };
   }
 
-  return { from: null, to: null, label: null };
+  return { type: "semantic" };
 }
 
 export default function SearchPage() {
@@ -217,14 +271,26 @@ export default function SearchPage() {
     setDisplayCount(PAGE_SIZE);
 
     try {
-      // Detect date intent from query
-      const dateFilter = detectDateFilter(query);
-      if (dateFilter.label) setDateLabel(dateFilter.label);
+      // Detect query intent (date range, latest N, or semantic)
+      const intent = detectQueryIntent(query);
+      if (intent.label) setDateLabel(intent.label);
 
       const supabase = createClient();
       let filtered: Entry[] = [];
 
-      if (dateFilter.from) {
+      if (intent.type === "latest") {
+        // Fetch the N most recent entries
+        const { data, error } = await supabase
+          .from("entries")
+          .select(
+            "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived, image_url",
+          )
+          .order("created_at", { ascending: false })
+          .limit(intent.limit || 10);
+
+        if (error) throw error;
+        filtered = data || [];
+      } else if (intent.type === "date" && intent.from) {
         // Date-based query: fetch ALL entries in the date range directly from DB
         // Exclude embedding column to avoid huge response sizes
         let dbQuery = supabase
@@ -232,12 +298,12 @@ export default function SearchPage() {
           .select(
             "id, content, ai_analysis, file_type, file_name, created_at, updated_at, archived, image_url",
           )
-          .gte("created_at", `${dateFilter.from}T00:00:00`)
+          .gte("created_at", `${intent.from}T00:00:00`)
           .order("created_at", { ascending: false });
 
-        if (dateFilter.to) {
+        if (intent.to) {
           // Add one day to 'to' to include the full day
-          const toDate = new Date(dateFilter.to);
+          const toDate = new Date(intent.to);
           toDate.setDate(toDate.getDate() + 1);
           dbQuery = dbQuery.lt(
             "created_at",
@@ -272,6 +338,15 @@ export default function SearchPage() {
 
       // Generate AI summary with dates included
       if (filtered.length > 0) {
+        // Collect metadata for richer AI context
+        const categoryCounts: Record<string, number> = {};
+        const allEntities = new Set<string>();
+        for (const r of filtered) {
+          const cat = r.ai_analysis?.category || "Okategoriserat";
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+          (r.ai_analysis?.entities || []).forEach((e) => allEntities.add(e));
+        }
+
         // For large result sets, summarize categories/counts rather than all entries
         const totalCount = filtered.length;
         let summariesForAI: string[];
@@ -286,9 +361,11 @@ export default function SearchPage() {
             const cat = r.ai_analysis?.category || "Okategoriserat";
             if (!categories[cat]) categories[cat] = { count: 0, samples: [] };
             categories[cat].count++;
-            if (categories[cat].samples.length < 2) {
+            if (categories[cat].samples.length < 3) {
+              const entities = r.ai_analysis?.entities?.join(", ") || "";
+              const summary = r.ai_analysis?.summary || r.content.slice(0, 80);
               categories[cat].samples.push(
-                r.ai_analysis?.summary || r.content.slice(0, 80),
+                entities ? `${summary} [${entities}]` : summary,
               );
             }
           }
@@ -296,14 +373,19 @@ export default function SearchPage() {
             `Totalt ${totalCount} poster.`,
             ...Object.entries(categories).map(
               ([cat, { count, samples }]) =>
-                `${cat}: ${count} st (t.ex. "${samples[0]}"${samples[1] ? `, "${samples[1]}"` : ""})`,
+                `${cat} (${count} st): ${samples.map((s) => `"${s}"`).join("; ")}`,
             ),
           ];
         } else {
           summariesForAI = filtered.map((r: Entry) => {
             const summary = r.ai_analysis?.summary || r.content.slice(0, 100);
             const date = r.created_at.slice(0, 10);
-            return `[${date}] ${summary}`;
+            const cat = r.ai_analysis?.category || "";
+            const entities = r.ai_analysis?.entities?.join(", ") || "";
+            const parts = [`[${date}]`, summary];
+            if (cat) parts.push(`(${cat})`);
+            if (entities) parts.push(`[${entities}]`);
+            return parts.join(" ");
           });
         }
 
@@ -314,18 +396,21 @@ export default function SearchPage() {
             query,
             summaries: summariesForAI,
             language: getLanguage(),
-            dateContext: dateFilter.label || null,
+            dateContext: intent.label || null,
             totalCount: filtered.length,
+            categories: categoryCounts,
+            entities: [...allEntities].slice(0, 30),
+            isLatestQuery: intent.type === "latest",
           }),
         });
         const { summary } = await sumRes.json();
         setAiSummary(summary || "");
       } else {
         const lang = getLanguage();
-        const noResults = dateFilter.label
+        const noResults = intent.label
           ? lang === "sv"
-            ? `Inga poster hittades för ${dateFilter.label}.`
-            : `No entries found for ${dateFilter.label}.`
+            ? `Inga poster hittades för ${intent.label}.`
+            : `No entries found for ${intent.label}.`
           : lang === "sv"
             ? "Inga matchande poster hittades."
             : "No matching entries found.";
@@ -447,7 +532,9 @@ export default function SearchPage() {
       {aiSummary && (
         <div className="mt-4 flex gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm">
           <Lightbulb size={18} className="text-brand-400 shrink-0 mt-0.5" />
-          <p>{aiSummary}</p>
+          <div className="min-w-0 flex-1 prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 max-w-none">
+            <MarkdownContent content={aiSummary} />
+          </div>
         </div>
       )}
 
