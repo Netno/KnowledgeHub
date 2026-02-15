@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = `Analyze the following content and extract structured information.
 Return a JSON object with these fields (include only what you can identify):
-- title: A short descriptive title (3-8 words) that uniquely identifies this entry. Be specific — e.g. "Flytta starttid tidsstyrda auktioner" or "Blodpudding med lingonbechamel". Do NOT just repeat the category.
+- title: A concise heading (2-8 words) for this entry — like a document title or recipe name. Use the most concrete/specific name possible. Examples: "Blodpudding i lingonspräckt bechamel", "Flytta starttid tidsstyrda auktioner", "Ta bort Totalt ex. moms". Do NOT write a sentence — no "Detta är...", no "Kunden önskar...". Just the topic itself.
 - summary: Brief 1-2 sentence summary of what this is about. Be specific — mention the customer/requester and the actual feature or issue.
 - topics: Array of 3-5 specific, searchable tags. These are critical for finding related entries later.
   RULES FOR TOPICS:
