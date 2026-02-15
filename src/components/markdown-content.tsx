@@ -82,10 +82,26 @@ const components: Components = {
   hr: () => <hr className="my-3 border-gray-200 dark:border-gray-700" />,
 };
 
-/** Auto-linkify plain URLs in text that isn't already markdown */
+/** Auto-linkify plain URLs and normalize numbered lines to markdown ordered lists */
 function preprocessContent(text: string): string {
   // Convert plain URLs (not already in markdown link syntax) to clickable links
-  return text.replace(/(?<!\]\()(?<!\[)(https?:\/\/[^\s<>\])"]+)/g, "[$1]($1)");
+  let result = text.replace(
+    /(?<!\]\()(?<!\[)(https?:\/\/[^\s<>\])"]+)/g,
+    "[$1]($1)",
+  );
+
+  // Convert lines starting with a number (e.g. "1 text", "2) text", "3: text")
+  // to proper markdown ordered list items ("1. text")
+  // But skip lines already in "1. " format
+  result = result.replace(
+    /^(\d+)[):\s]\s*/gm,
+    (match, num) => `${num}. `,
+  );
+
+  // Convert bullet-style lines: "• text" or "- text" without space issues
+  result = result.replace(/^[•●]\s*/gm, "- ");
+
+  return result;
 }
 
 export default function MarkdownContent({
