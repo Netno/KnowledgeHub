@@ -2,9 +2,40 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
+import { Search as SearchIcon, Loader2, Lightbulb, Archive, ArchiveRestore, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
+
+type DateFilter = "all" | "today" | "yesterday" | "week" | "month" | "custom";
+
+function getDateRange(filter: DateFilter, customFrom: string, customTo: string): { from: string | null; to: string | null } {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  switch (filter) {
+    case "today":
+      return { from: todayStr, to: null };
+    case "yesterday": {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      return { from: y.toISOString().slice(0, 10), to: todayStr };
+    }
+    case "week": {
+      const w = new Date(now);
+      w.setDate(w.getDate() - 7);
+      return { from: w.toISOString().slice(0, 10), to: null };
+    }
+    case "month": {
+      const m = new Date(now);
+      m.setMonth(m.getMonth() - 1);
+      return { from: m.toISOString().slice(0, 10), to: null };
+    }
+    case "custom":
+      return { from: customFrom || null, to: customTo || null };
+    default:
+      return { from: null, to: null };
+  }
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -12,6 +43,9 @@ export default function SearchPage() {
   const [aiSummary, setAiSummary] = useState("");
   const [searching, setSearching] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -34,25 +68,45 @@ export default function SearchPage() {
       const { data, error } = await supabase.rpc("match_entries", {
         query_embedding: embedding,
         match_threshold: 0.65,
-        match_count: 10,
+        match_count: 50,
       });
 
       if (error) throw error;
-      setResults(data || []);
 
-      // Generate AI summary
-      if (data && data.length > 0) {
-        const summaries = data.map((r: Entry) => {
-          return r.ai_analysis?.summary || r.content.slice(0, 100);
+      // Apply date filter client-side
+      const { from, to } = getDateRange(dateFilter, customFrom, customTo);
+      let filtered = data || [];
+      if (from) {
+        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) >= from);
+      }
+      if (to) {
+        filtered = filtered.filter((r: Entry) => r.created_at.slice(0, 10) <= to);
+      }
+
+      // Limit to top 10 after filtering
+      filtered = filtered.slice(0, 10);
+      setResults(filtered);
+
+      // Generate AI summary with dates included
+      if (filtered.length > 0) {
+        const summariesWithDates = filtered.map((r: Entry) => {
+          const summary = r.ai_analysis?.summary || r.content.slice(0, 100);
+          const date = r.created_at.slice(0, 10);
+          return `[${date}] ${summary}`;
         });
 
         const sumRes = await fetch("/api/summarize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, summaries, language: getLanguage() }),
+          body: JSON.stringify({ query, summaries: summariesWithDates, language: getLanguage() }),
         });
         const { summary } = await sumRes.json();
         setAiSummary(summary || "");
+      } else {
+        const lang = getLanguage();
+        setAiSummary(lang === "sv"
+          ? "Inga poster hittades för det valda datumintervallet."
+          : "No entries found for the selected date range.");
       }
     } catch (err) {
       console.error("Search error:", err);
@@ -98,6 +152,48 @@ export default function SearchPage() {
           {searching ? <Loader2 size={18} className="animate-spin" /> : <SearchIcon size={18} />}
         </button>
       </div>
+
+      {/* Date filter */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Calendar size={14} className="text-gray-400" />
+        {([
+          ["all", "Alla"],
+          ["today", "Idag"],
+          ["yesterday", "Igår"],
+          ["week", "Senaste veckan"],
+          ["month", "Senaste månaden"],
+          ["custom", "Välj datum"],
+        ] as [DateFilter, string][]).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => setDateFilter(value)}
+            className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
+              dateFilter === value
+                ? "bg-brand-400 text-gray-900 font-medium"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {dateFilter === "custom" && (
+        <div className="mt-2 flex gap-2 items-center">
+          <input
+            type="date"
+            value={customFrom}
+            onChange={(e) => setCustomFrom(e.target.value)}
+            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          />
+          <span className="text-xs text-gray-400">—</span>
+          <input
+            type="date"
+            value={customTo}
+            onChange={(e) => setCustomTo(e.target.value)}
+            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          />
+        </div>
+      )}
 
       {/* AI Summary */}
       {aiSummary && (
