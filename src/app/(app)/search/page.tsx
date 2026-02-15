@@ -196,7 +196,13 @@ export default function SearchPage() {
         const sumRes = await fetch("/api/summarize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query, summaries: summariesForAI, language: getLanguage() }),
+          body: JSON.stringify({
+            query,
+            summaries: summariesForAI,
+            language: getLanguage(),
+            dateContext: dateFilter.label || null,
+            totalCount: filtered.length,
+          }),
         });
         const { summary } = await sumRes.json();
         setAiSummary(summary || "");
