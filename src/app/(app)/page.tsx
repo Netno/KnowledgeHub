@@ -16,6 +16,7 @@ import {
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
+import ImageLightbox from "@/components/image-lightbox";
 
 export default function AddPage() {
   const { language } = useLanguage();
@@ -413,9 +414,8 @@ export default function AddPage() {
       {/* Image preview below textarea */}
       {sourceImageUrl && (
         <div className="mt-2 flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-          <img
+          <ImageLightbox
             src={sourceImageUrl}
-            alt=""
             className="h-16 w-16 object-cover rounded-lg"
           />
           <span className="text-xs text-gray-500">

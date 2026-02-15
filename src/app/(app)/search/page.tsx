@@ -18,6 +18,7 @@ import {
 import type { Entry } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
 import { useLanguage } from "@/lib/use-language";
+import ImageLightbox from "@/components/image-lightbox";
 import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
 import MarkdownContent from "@/components/markdown-content";
 
@@ -685,11 +686,9 @@ export default function SearchPage() {
                   ) : (
                     <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words">
                       {result.image_url && (
-                        <img
+                        <ImageLightbox
                           src={result.image_url}
-                          alt=""
                           className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
-                          loading="lazy"
                         />
                       )}
                       <MarkdownContent content={result.content} />

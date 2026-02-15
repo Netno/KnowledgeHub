@@ -18,6 +18,7 @@ import { useLanguage } from "@/lib/use-language";
 import { getLanguage } from "@/lib/use-language";
 import { getLocalizedAnalysis, needsTranslation } from "@/lib/analysis-i18n";
 import MarkdownContent from "@/components/markdown-content";
+import ImageLightbox from "@/components/image-lightbox";
 
 export default function BrowsePage() {
   const { language } = useLanguage();
@@ -409,11 +410,9 @@ export default function BrowsePage() {
                     ) : (
                       <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm break-words">
                         {entry.image_url && (
-                          <img
+                          <ImageLightbox
                             src={entry.image_url}
-                            alt=""
                             className="max-w-full max-h-64 rounded-lg mb-3 object-contain"
-                            loading="lazy"
                           />
                         )}
                         <MarkdownContent content={entry.content} />
