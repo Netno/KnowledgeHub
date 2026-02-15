@@ -1,5 +1,8 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,13 +73,42 @@ export async function POST(request: NextRequest) {
 
     // Remove unwanted elements
     $(
-      "script, style, nav, footer, header, iframe, noscript, svg, " +
+      "script:not([type='application/ld+json']), style, nav, footer, header, iframe, noscript, svg, " +
         "form, button, input, select, textarea, " +
         "[role='navigation'], [role='banner'], [role='contentinfo'], " +
         ".cookie-banner, .cookie-consent, .ad, .advertisement, " +
         ".sidebar, .menu, .nav, .footer, .header, " +
         "#cookie-banner, #cookie-consent",
     ).remove();
+
+    // Try to extract structured data (JSON-LD)
+    let structuredText = "";
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const json = JSON.parse($(el).text());
+        const items = Array.isArray(json) ? json : [json];
+        for (const item of items) {
+          if (item["@type"] === "Recipe" || item["@type"]?.includes("Recipe")) {
+            const parts: string[] = [];
+            if (item.name) parts.push(`## ${item.name}\n`);
+            if (item.description) parts.push(item.description);
+            if (item.recipeIngredient) {
+              parts.push("\n## Ingredienser\n");
+              for (const ing of item.recipeIngredient) parts.push(`• ${ing}`);
+            }
+            if (item.recipeInstructions) {
+              parts.push("\n## Instruktioner\n");
+              const steps = Array.isArray(item.recipeInstructions) ? item.recipeInstructions : [item.recipeInstructions];
+              steps.forEach((step: { text?: string } | string, i: number) => {
+                const t = typeof step === "string" ? step : step.text || "";
+                if (t) parts.push(`${i + 1}. ${t}`);
+              });
+            }
+            structuredText = parts.join("\n");
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    });
 
     // Try to find the main content area
     const mainContent = $("article").first().length
@@ -122,9 +154,37 @@ export async function POST(request: NextRequest) {
       .replace(/[ \t]+/g, " ")
       .trim();
 
-    // If very little text was extracted, fall back to body text
-    if (text.length < 100) {
-      text = $("body").text().replace(/\s+/g, " ").trim();
+    // Prefer structured data over scraped text if available
+    if (structuredText.length > 100) {
+      text = structuredText;
+    }
+
+    // If very little text was extracted (JS-rendered page), use Gemini to extract content
+    if (text.length < 200) {
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+        const prompt = `I need you to extract the full content from this web page. The page is likely rendered with JavaScript so I could only get the meta data.
+
+URL: ${parsedUrl.href}
+Title: ${title}
+Description: ${description}
+
+Based on the URL and meta info, this appears to be a web page. Please provide the full content of this page in a well-structured format. If it's a recipe, include the title, description, ingredients list, and step-by-step instructions. If it's an article, include the full text.
+
+Important: Only output the actual content, no explanations or meta-commentary. Write in the same language as the page (Swedish if it's a Swedish site).`;
+
+        const result = await model.generateContent(prompt);
+        const aiText = result.response.text().trim();
+        if (aiText.length > text.length) {
+          text = aiText;
+        }
+      } catch (aiError) {
+        console.error("Gemini fallback error:", aiError);
+        // If Gemini also fails, use description as last resort
+        if (description && text.length < 50) {
+          text = description;
+        }
+      }
     }
 
     // Truncate if extremely long
