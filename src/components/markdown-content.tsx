@@ -7,13 +7,13 @@ import type { Components } from "react-markdown";
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="text-lg font-bold">{children}</h1>
+    <h1 className="text-lg font-bold mt-3">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-base font-bold">{children}</h2>
+    <h2 className="text-base font-bold mt-2">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-sm font-semibold">{children}</h3>
+    <h3 className="text-sm font-semibold mt-1.5">{children}</h3>
   ),
   p: ({ children }) => <p className="leading-normal">{children}</p>,
   a: ({ href, children }) => (
@@ -112,7 +112,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`max-w-none [&>*]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_p]:my-0 [&_h1]:my-0 [&_h2]:my-0 [&_h3]:my-0 [&_blockquote]:my-0 ${className || ""}`}>
+    <div className={`max-w-none [&_p]:mb-0 [&_p]:mt-0 [&_ul]:mt-0 [&_ul]:mb-1 [&_ol]:mt-0 [&_ol]:mb-1 ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
