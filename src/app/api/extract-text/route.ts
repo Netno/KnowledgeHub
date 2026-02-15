@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
       text = await extractDOCX(bytes);
     } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
       text = extractXLSX(bytes);
+    } else if (name.endsWith(".csv")) {
+      text = new TextDecoder().decode(bytes);
     } else {
       return NextResponse.json(
         { error: "Unsupported file type" },
