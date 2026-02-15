@@ -193,6 +193,25 @@ export default function SearchPage() {
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const translatingRef = useRef<Set<string>>(new Set());
+  const initialSearchDone = useRef(false);
+
+  // Handle query parameter from URL (e.g., from clickable tags on browse page)
+  useEffect(() => {
+    if (initialSearchDone.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q");
+    if (q) {
+      setQuery(q);
+      initialSearchDone.current = true;
+      // Trigger search after state update
+      setTimeout(() => {
+        const searchBtn = document.querySelector(
+          "[data-search-btn]",
+        ) as HTMLButtonElement;
+        searchBtn?.click();
+      }, 100);
+    }
+  }, []);
 
   // Lazy-translate entries whose ai_analysis is in a different language
   useEffect(() => {
@@ -509,6 +528,7 @@ export default function SearchPage() {
           className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm"
         />
         <button
+          data-search-btn
           onClick={handleSearch}
           disabled={searching}
           className="px-4 py-3 bg-brand-400 hover:bg-brand-500 text-gray-900 rounded-xl transition-colors disabled:opacity-50"
@@ -653,16 +673,26 @@ export default function SearchPage() {
                 )}
               </div>
 
-              {/* Topics */}
+              {/* Topics — clickable to search */}
               {ai.topics && ai.topics.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {ai.topics.slice(0, 5).map((t, j) => (
-                    <span
+                    <button
                       key={j}
-                      className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full"
+                      onClick={() => {
+                        setQuery(t);
+                        // Trigger search after setting query
+                        setTimeout(() => {
+                          const searchBtn = document.querySelector(
+                            "[data-search-btn]",
+                          ) as HTMLButtonElement;
+                          searchBtn?.click();
+                        }, 50);
+                      }}
+                      className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
                     >
                       {t}
-                    </span>
+                    </button>
                   ))}
                 </div>
               )}

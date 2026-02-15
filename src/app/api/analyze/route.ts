@@ -23,9 +23,16 @@ export async function POST(request: NextRequest) {
 
     const prompt = `Analyze the following content and extract structured information.
 Return a JSON object with these fields (include only what you can identify):
-- summary: Brief 1-2 sentence summary
-- topics: Array of main topics/themes
-- entities: Array of named entities (people, companies, products, etc.)
+- summary: Brief 1-2 sentence summary of what this is about. Be specific — mention the customer/requester and the actual feature or issue.
+- topics: Array of 3-5 specific, searchable tags. These are critical for finding related entries later.
+  RULES FOR TOPICS:
+  - Be SPECIFIC, not generic. Use terms that describe exactly what this entry is about.
+  - BAD examples: "Funktionalitet", "Support", "Användarbehov", "Arbetsflöde" (too generic, matches everything)
+  - GOOD examples: "Tidsstyrda auktioner", "PDF-utskrift", "Bulkfakturering", "Sortering plocklistor", "Återköpskvitton"
+  - Think: "If someone searches for this topic, would they find ONLY relevant entries?"
+  - Include the specific feature, action, or domain area
+  - Include the problem type if applicable (e.g., "Felhantering", "Behörighetsproblem")
+- entities: Array of named entities (people, companies, products, specific object IDs, etc.)
 - category: Best fitting category (e.g., ${categoryExamples})
 - sentiment: "positive", "negative", "neutral", or "mixed"
 - action_items: Array of any action items or tasks mentioned

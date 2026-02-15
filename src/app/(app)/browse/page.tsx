@@ -251,12 +251,13 @@ export default function BrowsePage() {
                     {ai.topics && ai.topics.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {ai.topics.slice(0, 5).map((t, i) => (
-                          <span
+                          <a
                             key={i}
-                            className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full"
+                            href={`/search?q=${encodeURIComponent(t)}`}
+                            className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full hover:bg-brand-100 dark:hover:bg-brand-900/40 hover:text-brand-600 dark:hover:text-brand-400 transition-colors cursor-pointer"
                           >
                             {t}
-                          </span>
+                          </a>
                         ))}
                       </div>
                     )}
