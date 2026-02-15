@@ -75,7 +75,7 @@ export default function AdminPage() {
   };
 
   const retagAll = async () => {
-    if (!confirm("This will re-analyze ALL entries with updated tagging. This may take a while. Continue?")) return;
+    if (!confirm("This will re-tag ALL entries (only topics & entities — summary, category etc. are preserved). Continue?")) return;
     setProcessing(true);
     setProgress({ current: 0, total: entries.length });
 
@@ -85,17 +85,18 @@ export default function AdminPage() {
       setProgress({ current: i + 1, total: entries.length });
 
       try {
-        if (i > 0) await new Promise((r) => setTimeout(r, 5000));
+        if (i > 0) await new Promise((r) => setTimeout(r, 2000));
 
-        const res = await fetch("/api/analyze", {
+        const res = await fetch("/api/retag", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: entry.content, language: getLanguage() }),
         });
-        const analysis = await res.json();
+        const { topics, entities, error } = await res.json();
 
-        if (!analysis.error) {
-          await supabase.from("entries").update({ ai_analysis: analysis }).eq("id", entry.id);
+        if (!error && entry.ai_analysis) {
+          const updated = { ...entry.ai_analysis, topics, entities };
+          await supabase.from("entries").update({ ai_analysis: updated }).eq("id", entry.id);
         }
       } catch (err) {
         console.error(`Failed re-tag ${i + 1}:`, err);
