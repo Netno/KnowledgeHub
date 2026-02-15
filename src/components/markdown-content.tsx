@@ -38,7 +38,7 @@ const components: Components = {
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
   blockquote: ({ children }) => (
-    <blockquote className="border-l-3 border-brand-400/50 pl-3 my-1 text-gray-600 dark:text-gray-400 italic">
+    <blockquote className="border-l-3 border-brand-400/50 pl-3 my-2 text-gray-600 dark:text-gray-400 italic">
       {children}
     </blockquote>
   ),
@@ -46,7 +46,7 @@ const components: Components = {
     const isBlock = className?.includes("language-");
     if (isBlock) {
       return (
-        <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 my-1 overflow-x-auto text-xs">
+        <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 my-2 overflow-x-auto text-xs">
           <code>{children}</code>
         </pre>
       );
@@ -112,7 +112,7 @@ export default function MarkdownContent({
   const processed = preprocessContent(content);
 
   return (
-    <div className={`prose-sm max-w-none [&>p+ul]:mt-0 [&>p+ol]:mt-0 [&>p+ul]:-mt-1 [&>p+ol]:-mt-1 ${className || ""}`}>
+    <div className={`prose-sm max-w-none ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={components}
