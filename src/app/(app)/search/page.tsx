@@ -405,6 +405,16 @@ export default function SearchPage() {
                       </span>
                     )}
                     <span>📅 {result.created_at.slice(0, 10)}</span>
+                    {result.file_type === "url" && result.file_name && (
+                      <a
+                        href={result.file_name}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-500 hover:underline flex items-center gap-0.5"
+                      >
+                        🔗 {sv ? "Källa" : "Source"}
+                      </a>
+                    )}
                   </div>
                 </div>
                 {result.similarity != null && result.similarity > 0 && (

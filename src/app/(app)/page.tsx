@@ -12,6 +12,8 @@ import {
   X,
   Eye,
   Pencil,
+  Link,
+  Globe,
 } from "lucide-react";
 import type { AiAnalysis } from "@/lib/types";
 import { getLanguage } from "@/lib/use-language";
@@ -32,8 +34,68 @@ export default function AddPage() {
   const [fileStatus, setFileStatus] = useState<string>("");
   const [showPreview, setShowPreview] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [detectedUrl, setDetectedUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dragCounter = useRef(0);
+
+  // URL detection regex
+  const urlRegex = /https?:\/\/[^\s]+/;
+
+  // Detect URL when content changes
+  const handleContentChange = useCallback(
+    (value: string) => {
+      setContent(value);
+      const trimmed = value.trim();
+      // If the entire content is just a URL (or URL + whitespace), offer to fetch it
+      const match = trimmed.match(/^(https?:\/\/[^\s]+)\s*$/);
+      if (match && !sourceUrl) {
+        setDetectedUrl(match[1]);
+      } else {
+        setDetectedUrl(null);
+      }
+    },
+    [sourceUrl],
+  );
+
+  // Fetch content from a URL
+  const fetchUrlContent = useCallback(
+    async (url: string) => {
+      setUrlLoading(true);
+      setDetectedUrl(null);
+      setFileStatus(
+        sv
+          ? `🌐 Hämtar innehåll från URL...`
+          : `🌐 Fetching content from URL...`,
+      );
+      try {
+        const res = await fetch("/api/extract-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch URL");
+
+        const { title, text } = data;
+        const header = title ? `[${title}]` : `[${url}]`;
+        const body = `${header}\nKälla: ${url}\n\n${text}`;
+        setContent(body);
+        setSourceUrl(url);
+        setShowPreview(true);
+      } catch (err) {
+        setStatus({
+          type: "error",
+          message: `${sv ? "Kunde inte hämta URL" : "Could not fetch URL"}: ${err}`,
+        });
+      } finally {
+        setUrlLoading(false);
+        setFileStatus("");
+      }
+    },
+    [sv],
+  );
 
   const addFiles = useCallback((newFiles: File[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
@@ -275,8 +337,8 @@ export default function AddPage() {
         user_id: user.id,
         content: fullContent,
         ai_analysis: aiAnalysis,
-        file_type: files.length > 0 ? files[0].type : null,
-        file_name: files.length > 0 ? files[0].name : null,
+        file_type: sourceUrl ? "url" : files.length > 0 ? files[0].type : null,
+        file_name: sourceUrl || (files.length > 0 ? files[0].name : null),
         embedding,
         created_at: new Date().toISOString(),
       });
@@ -288,6 +350,7 @@ export default function AddPage() {
       setFiles([]);
       setShowPreview(false);
       setAnalysis(null);
+      setSourceUrl(null);
     } catch (err) {
       setStatus({ type: "error", message: `Error: ${err}` });
     } finally {
@@ -324,7 +387,7 @@ export default function AddPage() {
         <textarea
           ref={textareaRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => handleContentChange(e.target.value)}
           onPaste={handlePaste}
           placeholder={
             sv
@@ -334,6 +397,60 @@ export default function AddPage() {
           className="w-full h-32 px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
         />
       </div>
+
+      {/* URL detected banner */}
+      {detectedUrl && !urlLoading && (
+        <div className="mt-2 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <Globe size={16} className="text-blue-500 shrink-0" />
+          <span className="text-sm text-blue-700 dark:text-blue-300 flex-1 truncate">
+            {sv ? "URL upptäckt" : "URL detected"}: {detectedUrl}
+          </span>
+          <button
+            onClick={() => fetchUrlContent(detectedUrl)}
+            className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium shrink-0"
+          >
+            {sv ? "Hämta innehåll" : "Fetch content"}
+          </button>
+          <button
+            onClick={() => setDetectedUrl(null)}
+            className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-200"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+      {urlLoading && (
+        <div className="mt-2 flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <Loader2 size={16} className="animate-spin text-blue-500" />
+          <span className="text-sm text-blue-700 dark:text-blue-300">
+            {sv
+              ? "Hämtar innehåll från URL..."
+              : "Fetching content from URL..."}
+          </span>
+        </div>
+      )}
+
+      {/* Source URL indicator */}
+      {sourceUrl && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+          <Link size={12} />
+          <span>{sv ? "Källa" : "Source"}:</span>
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-500 hover:underline truncate"
+          >
+            {sourceUrl}
+          </a>
+          <button
+            onClick={() => setSourceUrl(null)}
+            className="text-gray-400 hover:text-red-500"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
 
       {/* File upload + attached files */}
       <div className="mt-3">
@@ -417,6 +534,7 @@ export default function AddPage() {
                     setContent("");
                     setFiles([]);
                     setShowPreview(false);
+                    setSourceUrl(null);
                   }}
                   className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
                 >

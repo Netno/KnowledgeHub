@@ -149,10 +149,15 @@ export default function BrowsePage() {
                     <span className="text-xs text-gray-400">
                       {entry.created_at.slice(0, 10)}
                     </span>
-                    {entry.file_type && (
+                    {entry.file_type && entry.file_type !== "url" && (
                       <span className="text-xs text-gray-400">
                         📎 {entry.file_type}
                       </span>
+                    )}
+                    {entry.file_type === "url" && entry.file_name && (
+                      <a href={entry.file_name} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-500 hover:underline">
+                        🔗 {sv ? "Källa" : "Source"}
+                      </a>
                     )}
                     <div className="flex gap-1 mt-1">
                       <button
