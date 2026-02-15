@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const langName = targetLang === "sv" ? "Swedish" : "English";
 

@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
         ? '"Feedback", "Idé", "Buggrapport", "Mötesanteckningar", "Forskning", "Fråga", "Dokumentation", "Recept", "Anteckning", "Övrigt"'
         : '"Feedback", "Idea", "Bug Report", "Meeting Notes", "Research", "Question", "Documentation", "Recipe", "Note", "Other"';
 
-    const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const analyzePrompt = `Analyze the following content and extract structured information.
 Return a JSON object with these fields (include only what you can identify):
 - summary: Brief 1-2 sentence summary of what this is about. Be specific — mention the customer/requester and the actual feature or issue.

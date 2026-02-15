@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const { content, fileInfo, language } = await request.json();
 
-    const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const langInstruction =
       language === "sv"

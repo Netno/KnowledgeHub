@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     // If very little text was extracted (JS-rendered page), use Gemini to extract content
     if (text.length < 200) {
       try {
-        const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         const prompt = `I need you to extract the full content from this web page. The page is likely rendered with JavaScript so I could only get the meta data.
 
 URL: ${parsedUrl.href}

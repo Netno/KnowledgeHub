@@ -277,7 +277,7 @@ export default function AdminPage() {
     <div>
       <h1 className="text-2xl font-bold mb-4">Admin Tools</h1>
 
-      <p className="text-sm text-gray-500 mb-6">Model: gemma-3-27b-it</p>
+      <p className="text-sm text-gray-500 mb-6">Model: gemini-2.0-flash</p>
 
       {/* Progress bar */}
       {processing && progress.total > 0 && (
