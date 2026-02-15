@@ -103,9 +103,10 @@ export default function SearchPage() {
 
       if (dateFilter.from) {
         // Date-based query: fetch ALL entries in the date range directly from DB
+        // Exclude embedding column to avoid huge response sizes
         let dbQuery = supabase
           .from("entries")
-          .select("*")
+          .select("id, content, ai_analysis, file_type, file_name, created_at, archived")
           .gte("created_at", `${dateFilter.from}T00:00:00`)
           .order("created_at", { ascending: false });
 

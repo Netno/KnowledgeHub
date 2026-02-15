@@ -14,7 +14,7 @@ export default function BrowsePage() {
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    let query = supabase.from("entries").select("*").order("created_at", { ascending: false }).limit(500);
+    let query = supabase.from("entries").select("id, content, ai_analysis, file_type, file_name, created_at, archived").order("created_at", { ascending: false }).limit(500);
 
     if (!showArchived) {
       query = query.eq("archived", false);
