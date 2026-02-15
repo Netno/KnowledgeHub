@@ -44,7 +44,7 @@ export default function AddPage() {
     const el = textareaRef.current;
     if (el) {
       el.style.height = "auto";
-      el.style.height = Math.max(256, el.scrollHeight) + "px";
+      el.style.height = Math.max(96, el.scrollHeight) + "px";
     }
   }, [content]);
 
@@ -398,7 +398,7 @@ export default function AddPage() {
           onChange={(e) => {
             handleContentChange(e.target.value);
             e.target.style.height = "auto";
-            e.target.style.height = Math.max(256, e.target.scrollHeight) + "px";
+            e.target.style.height = Math.max(96, e.target.scrollHeight) + "px";
           }}
           onPaste={handlePaste}
           placeholder={
@@ -406,7 +406,7 @@ export default function AddPage() {
               ? "Skriv, klistra in text/filer, eller dra & släpp filer här..."
               : "Type, paste text/files, or drag & drop files here..."
           }
-          className="w-full min-h-[16rem] max-h-[70vh] px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
+          className="w-full min-h-[6rem] max-h-[70vh] px-4 py-3 rounded-xl bg-white dark:bg-gray-900 resize-y focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm border-0"
         />
       </div>
 
