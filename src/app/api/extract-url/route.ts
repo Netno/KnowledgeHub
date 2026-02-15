@@ -71,11 +71,14 @@ export async function POST(request: NextRequest) {
       $('meta[name="description"]').attr("content") ||
       "";
 
-    // Extract image
+    // Extract image (some sites use name= instead of property= for og tags)
     let imageUrl =
       $('meta[property="og:image"]').attr("content") ||
+      $('meta[name="og:image"]').attr("content") ||
       $('meta[property="og:image:url"]').attr("content") ||
+      $('meta[name="og:image:url"]').attr("content") ||
       $('meta[name="twitter:image"]').attr("content") ||
+      $('meta[name="twitter:image:src"]').attr("content") ||
       "";
 
     // Make relative image URLs absolute
@@ -101,6 +104,13 @@ export async function POST(request: NextRequest) {
         const items = Array.isArray(json) ? json : [json];
         for (const item of items) {
           if (item["@type"] === "Recipe" || item["@type"]?.includes("Recipe")) {
+            // Extract image from JSON-LD if not found in meta tags
+            if (!imageUrl && item.image) {
+              const img = Array.isArray(item.image)
+                ? item.image[0]
+                : item.image;
+              imageUrl = typeof img === "string" ? img : img?.url || "";
+            }
             const parts: string[] = [];
             if (item.name) parts.push(`## ${item.name}\n`);
             if (item.description) parts.push(item.description);
