@@ -74,6 +74,38 @@ export default function AdminPage() {
     fetchEntries();
   };
 
+  const reanalyzeAllEntries = async () => {
+    if (!confirm("This will fully re-analyze ALL entries (new summary, category, tags, etc.). Continue?")) return;
+    setProcessing(true);
+    setProgress({ current: 0, total: entries.length });
+
+    const supabase = createClient();
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      setProgress({ current: i + 1, total: entries.length });
+
+      try {
+        if (i > 0) await new Promise((r) => setTimeout(r, 2000));
+
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: entry.content, language: getLanguage() }),
+        });
+        const analysis = await res.json();
+
+        if (!analysis.error) {
+          await supabase.from("entries").update({ ai_analysis: analysis }).eq("id", entry.id);
+        }
+      } catch (err) {
+        console.error(`Failed re-analyze ${i + 1}:`, err);
+      }
+    }
+
+    setProcessing(false);
+    fetchEntries();
+  };
+
   const retagAll = async () => {
     if (!confirm("This will re-tag ALL entries (only topics & entities — summary, category etc. are preserved). Continue?")) return;
     setProcessing(true);
@@ -355,13 +387,29 @@ export default function AdminPage() {
         )}
       </section>
 
+      {/* Re-analyze all entries */}
+      <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+        <h2 className="font-semibold mb-2">Regenerera all analys</h2>
+        <p className="text-sm text-gray-500 mb-3">
+          Kör full AI-analys på alla {entries.length} poster (ny summary, kategori, taggar, entities).
+          Uppskattad tid: ~{Math.ceil((entries.length * 4) / 60)} minuter.
+        </p>
+        <button
+          onClick={reanalyzeAllEntries}
+          disabled={processing}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+        >
+          <RefreshCw size={14} />
+          Regenerera allt ({entries.length})
+        </button>
+      </section>
+
       {/* Re-tag all entries */}
       <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-        <h2 className="font-semibold mb-2">Re-tag all entries</h2>
+        <h2 className="font-semibold mb-2">Uppdatera taggar</h2>
         <p className="text-sm text-gray-500 mb-3">
-          Re-analyze all {entries.length} entries with the latest AI prompt to generate better, more specific tags.
-          This uses a 5-second delay between requests.
-          Estimated time: ~{Math.ceil((entries.length * 7) / 60)} minutes.
+          Uppdatera bara taggar och entities på alla {entries.length} poster. Summary och kategori bevaras.
+          Uppskattad tid: ~{Math.ceil((entries.length * 4) / 60)} minuter.
         </p>
         <button
           onClick={retagAll}
@@ -369,7 +417,7 @@ export default function AdminPage() {
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
         >
           <RefreshCw size={14} />
-          Re-tag all entries ({entries.length})
+          Uppdatera taggar ({entries.length})
         </button>
       </section>
 
