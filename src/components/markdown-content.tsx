@@ -16,7 +16,7 @@ const components: Components = {
   h3: ({ children }) => (
     <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>
   ),
-  p: ({ children }) => <p className="mb-0.5 leading-relaxed">{children}</p>,
+  p: ({ children }) => <p className="mb-0.5 leading-relaxed whitespace-pre-wrap">{children}</p>,
   a: ({ href, children }) => (
     <a
       href={href}
