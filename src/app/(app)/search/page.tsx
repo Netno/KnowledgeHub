@@ -609,8 +609,13 @@ export default function SearchPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm">
-                    {i + 1}. {ai.summary || result.content.slice(0, 80)}
+                    {i + 1}. {ai.title || ai.summary || result.content.slice(0, 80)}
                   </h3>
+                  {ai.summary && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {ai.summary}
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500">
                     {ai.category && <span>📁 {ai.category}</span>}
                     {ai.entities && ai.entities.length > 0 && (
